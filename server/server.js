@@ -1,39 +1,37 @@
-import express from 'express'
-import cors from 'cors'
-import dotenv from 'dotenv'
-import 'dotenv/config' 
-import connectDB from './config/mongodb.js'
-import connectCloudinary from './config/cloudinary.js'
-import userRouter from './routes/userRoutes.js'
-import productRouter from './routes/ProductRoutes.js'
-import CartRouter from './routes/cartRoute.js'
-import orderRouter from './routes/orderRoute.js'
+import express from "express";
+import cors from "cors";
+import dotenv from "dotenv";
+import "dotenv/config";
 
+import connectDB from "./config/mongodb.js";
+import connectCloudinary from "./config/cloudinary.js";
 
-//app config
+import userRouter from "./routes/userRoutes.js";
+import productRouter from "./routes/ProductRoutes.js";
+import CartRouter from "./routes/cartRoute.js";
+import orderRouter from "./routes/orderRoute.js";
 
-const app = express()
+dotenv.config();
 
-const port = process.env.PORT || 4000
-connectDB()
-connectCloudinary
+// App config
+const app = express();
 
-// middleware
+// Database & Cloudinary
+connectDB();
+connectCloudinary();
 
-app.use(express.json())
-app.use(cors())
+// Middleware
+app.use(express.json());
+app.use(cors());
 
+// API endpoints
+app.use("/api/user", userRouter);
+app.use("/api/product", productRouter);
+app.use("/api/cart", CartRouter);
+app.use("/api/order", orderRouter);
 
-//api endpoints
-app.use('/api/user',userRouter)
-app.use('/api/product', productRouter )
-app.use('/api/cart', CartRouter )
-app.use('/api/order', orderRouter )
+app.get("/", (req, res) => {
+  res.send("API WORKING");
+});
 
-
-app.get('/', (req, res)=>{
-    res.send("API WORKING")
-
-}) 
-
-app.listen(port, ()=>console.log('Server stared on port: '+port))
+export default app;
