@@ -1,0 +1,115 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&family=Prata&display=swap');
+@import "tailwindcss";
+
+* {
+  font-family: outfit, sans-serif;
+}
+
+/* ================= SIDEBAR ================= */
+
+.sidebar-link {
+  position: relative;
+  display: block;
+  color: #374151; /* gray-700 */
+  border-radius: 12px;
+  transition: all 0.25s ease;
+}
+
+.sidebar-link:hover {
+  background-color: #f9fafb; /* gray-50 */
+}
+
+/* Active State */
+.sidebar-link.active {
+  background-color: #000;
+  color: #fff;
+}
+
+.sidebar-link.active img {
+  filter: brightness(0) invert(1);
+}
+
+/* Left indicator bar */
+.sidebar-link.active::before {
+  content: "";
+  position: absolute;
+  left: -6px;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 60%;
+  width: 4px;
+  border-radius: 999px;
+  background-color: #000;
+}
+
+
+
+
+
+@keyframes dropdown {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(-8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.animate-dropdown {
+  animation: dropdown 0.2s ease-out forwards;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fadeInUp {
+  animation: fadeInUp 0.8s ease-out forwards;
+}
+
+.prata-regular {
+  font-family: "Prata", serif;
+  font-weight: 400;
+  font-style: normal;
+}
+
+
+@media (max-width:640px) {
+  a.active {
+    background-color:
+      gray;
+    color:
+      white;
+  }
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+@keyframes pulse-once {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1);
+  }
+} 
