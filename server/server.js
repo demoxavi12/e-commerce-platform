@@ -18,7 +18,7 @@ const app = express();
 
 // Database & Cloudinary
 connectDB();
-connectCloudinary();
+connectCloudinary;
 
 // Middleware
 app.use(express.json());
