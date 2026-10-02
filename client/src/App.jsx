@@ -1,51 +1,77 @@
-import React from 'react'
-import { Routes, Route } from 'react-router-dom'
-import Home from './pages/Home.jsx'
-import Login from './pages/Login.jsx'
-import Cart from './pages/Cart.jsx'
-import Orders from './pages/Orders.jsx'
-import Collection from './pages/Collection.jsx'
-import About from './pages/About.jsx'
-import Contact from './pages/Contact.jsx'
-import Product from './pages/Product.jsx'
-import PlaceOrder from './pages/PlaceOrder.jsx'
-import Navbar from './components/Navbar.jsx'
-import Profile from './pages/Profile.jsx'
-import Footer from './components/Footer.jsx'
-import { Search } from 'lucide-react'
-import Searchbar from './components/Searchbar.jsx'
-import ScrollToTop from './components/ScrollToTop.jsx'
-import { ToastContainer, toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
-import Verify from './pages/Verify.jsx'
+import { lazy, Suspense } from "react";
+import { Routes, Route, useLocation } from "react-router-dom";
+import { AnimatePresence } from "framer-motion";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import Navbar from "./components/Navbar.jsx";
+import Footer from "./components/Footer.jsx";
+import MobileMenu from "./components/MobileMenu.jsx";
+import SearchOverlay from "./components/SearchOverlay.jsx";
+import CartDrawer from "./components/CartDrawer.jsx";
+import FlyToCartLayer from "./components/FlyToCartLayer.jsx";
+import SmoothScroll from "./components/motion/SmoothScroll.jsx";
+import Cursor from "./components/motion/Cursor.jsx";
+import PageTransition from "./components/motion/PageTransition.jsx";
+import Home from "./pages/Home.jsx";
+import { scrollToTop } from "./lib/lenis";
 
+// Home is eager (first paint); everything else is code-split.
+const Collection = lazy(() => import("./pages/Collection.jsx"));
+const About = lazy(() => import("./pages/About.jsx"));
+const Contact = lazy(() => import("./pages/Contact.jsx"));
+const Product = lazy(() => import("./pages/Product.jsx"));
+const Cart = lazy(() => import("./pages/Cart.jsx"));
+const Login = lazy(() => import("./pages/Login.jsx"));
+const PlaceOrder = lazy(() => import("./pages/PlaceOrder.jsx"));
+const Orders = lazy(() => import("./pages/Orders.jsx"));
+const Profile = lazy(() => import("./pages/Profile.jsx"));
+const Verify = lazy(() => import("./pages/Verify.jsx"));
+
+const PageFallback = () => <div className="min-h-[100svh]" aria-busy="true" />;
 
 const App = () => {
+  const location = useLocation();
+
   return (
-    <div className='px-4 sm:px-[5vw] md:px-[7vw] 1g:px-[9vw]'>
-      <ToastContainer />
+    <>
+      <a href="#main" className="sr-only z-[200] bg-ink px-4 py-3 text-bone focus:not-sr-only focus:fixed focus:left-4 focus:top-4">
+        Skip to content
+      </a>
+      <SmoothScroll />
+      <Cursor />
+      <ToastContainer position="bottom-left" hideProgressBar theme="dark" />
 
-      <ScrollToTop />
       <Navbar />
-      <Searchbar />
-      <Routes>
-        <Route path='/' element={<Home />} />
-        <Route path='/collection' element={<Collection />} />
-        <Route path='/about' element={<About />} />
-        <Route path='/contact' element={<Contact />} />
-        <Route path='/product/:productId' element={<Product />} />
-        <Route path='/cart' element={<Cart />} />
-        <Route path='/login' element={<Login />} />
-        <Route path='/place-orders' element={<PlaceOrder />} />
-        <Route path='/orders' element={<Orders />} />
-        <Route path='/profile' element={<Profile />} />
-        <Route path="/verify" element={<Verify/>} />
+      <MobileMenu />
+      <SearchOverlay />
+      <CartDrawer />
+      <FlyToCartLayer />
 
-      </Routes>
+      {/* Scroll resets between exit and enter, so the old page never jumps. */}
+      <AnimatePresence mode="wait" onExitComplete={() => scrollToTop(true)}>
+        <PageTransition key={location.pathname}>
+          <Suspense fallback={<PageFallback />}>
+            <Routes location={location}>
+              <Route path="/" element={<Home />} />
+              <Route path="/collection" element={<Collection />} />
+              <Route path="/collection/:slug" element={<Collection />} />
+              <Route path="/about" element={<About />} />
+              <Route path="/contact" element={<Contact />} />
+              <Route path="/product/:productId" element={<Product />} />
+              <Route path="/cart" element={<Cart />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/place-orders" element={<PlaceOrder />} />
+              <Route path="/orders" element={<Orders />} />
+              <Route path="/profile" element={<Profile />} />
+              <Route path="/verify" element={<Verify />} />
+            </Routes>
+          </Suspense>
+        </PageTransition>
+      </AnimatePresence>
+
       <Footer />
+    </>
+  );
+};
 
-    </div>
-  )
-}
-
-export default App
+export default App;

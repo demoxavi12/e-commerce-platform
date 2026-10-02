@@ -1,172 +1,191 @@
-import React, { useEffect, useState } from "react";
-import assets from "../assets/assets";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { useContext, useMemo, useRef } from "react";
+import { Link } from "react-router-dom";
+import { motion, useMotionValue, useScroll, useSpring, useTransform, useReducedMotion } from "framer-motion";
+import { ShopContext } from "../context/shop-context";
+import ShaderCanvas from "./motion/ShaderCanvas";
+import SplitText from "./motion/SplitText";
+import Button from "./ui/Button";
+import { useFinePointer } from "../hooks/useMedia";
+import { ease, pad } from "../lib/motion";
+import { img } from "../lib/image";
 
-
-const slides = [
-    {
-        img: assets.hero_img3,
-        title: "Valentine Vibes",
-        subtitle: "Perfect looks for your special day",
-        position: "bottom-center",
-        gradient: "from-black/80 via-black/40 to-transparent",
-    },
-
-    {
-        img: assets.hero_img2,
-        title: "Minimal Luxe",
-        subtitle: "Clean designs. Maximum impact.",
-        position: "center",
-        gradient: "from-black/60 via-black/40 to-black/60",
-    },
-
-    {
-        img: assets.hero_img1,
-        title: "Street Ready",
-        subtitle: "Urban fits for everyday style",
-        position: "bottom-left",
-        gradient: "from-black/70 via-black/30 to-transparent",
-    },
-    {
-        img: assets.hero_img4,
-        title: "New Essentials",
-        subtitle: "Timeless pieces for every wardrobe",
-        position: "top-left",
-        gradient: "from-black/70 via-black/30 to-transparent",
-    },
-    {
-        img: assets.hero_img5,
-        title: "Masculine Edge",
-        subtitle: "Rugged styles with refined details",
-        position: "center-right",
-        gradient: "from-black/70 via-black/40 to-transparent",
-    },
+// Depth layers for the floating product cluster. z = translateZ, d = mouse depth.
+const LAYERS = [
+  { cls: "left-0 top-[8%] w-[32%] lg:-left-[4%]", z: -140, d: 18, delay: 0.55, float: "0s" },
+  { cls: "left-[28%] top-0 aspect-[3/4] h-[88%] lg:left-[24%] lg:h-[74%]", z: 0, d: 34, delay: 0.35, float: "-2.5s" },
+  { cls: "right-[2%] top-[18%] w-[30%] lg:right-[4%] lg:top-[36%] lg:w-[25%]", z: 90, d: 60, delay: 0.75, float: "-5s" },
 ];
 
 const Hero = () => {
-    const [current, setCurrent] = useState(0);
+  const { products, currecy } = useContext(ShopContext);
+  const ref = useRef(null);
+  const fine = useFinePointer();
+  const reduced = useReducedMotion();
 
-    // auto slide
-    useEffect(() => {
-        const interval = setInterval(() => {
-            setCurrent((prev) => (prev + 1) % slides.length);
-        }, 4000);
-        return () => clearInterval(interval);
-    }, []);
+  // Real products: bestsellers first, then latest.
+  const featured = useMemo(() => {
+    const best = products.filter((p) => p.bestseller);
+    const rest = products.filter((p) => !p.bestseller);
+    return [...best, ...rest].slice(0, 3);
+  }, [products]);
 
-    const prevSlide = () => {
-        setCurrent((prev) => (prev - 1 + slides.length) % slides.length);
-    };
+  // Mouse-driven depth (desktop only)
+  const mx = useMotionValue(0);
+  const my = useMotionValue(0);
+  const smx = useSpring(mx, { stiffness: 60, damping: 18 });
+  const smy = useSpring(my, { stiffness: 60, damping: 18 });
+  const rotY = useTransform(smx, [-1, 1], [-9, 9]);
+  const rotX = useTransform(smy, [-1, 1], [7, -7]);
 
-    const nextSlide = () => {
-        setCurrent((prev) => (prev + 1) % slides.length);
-    };
+  const onMove = (e) => {
+    if (!fine || reduced) return;
+    mx.set((e.clientX / window.innerWidth) * 2 - 1);
+    my.set((e.clientY / window.innerHeight) * 2 - 1);
+  };
 
-    return (
-        <div className="relative overflow-hidden">
-            {/* gradient background glow */}
-            <div className="absolute inset-0 bg-gradient-to-r from-gray-100 via-white to-gray-200" />
+  // Scroll choreography: headline lifts, cluster recedes, veil darkens.
+  const { scrollYProgress } = useScroll({ target: ref, offset: ["start start", "end start"] });
+  const titleY = useTransform(scrollYProgress, [0, 1], ["0%", reduced ? "0%" : "-35%"]);
+  const clusterY = useTransform(scrollYProgress, [0, 1], ["0%", reduced ? "0%" : "18%"]);
+  const clusterScale = useTransform(scrollYProgress, [0, 1], [1, reduced ? 1 : 0.86]);
+  const veil = useTransform(scrollYProgress, [0, 0.9], [0, 0.7]);
 
-            <div className="relative flex flex-col sm:flex-row items-center border border-gray-300">
-                {/* hero left */}
-                <div className="w-full sm:w-1/2 flex items-center justify-center py-12 sm:py-0 order-2 sm:order-1">
-                    <div className="text-[#414141] text-center sm:text-left px-4">
+  return (
+    <section
+      ref={ref}
+      onPointerMove={onMove}
+      className="relative h-[100svh] min-h-[640px] w-full overflow-hidden bg-ink text-bone"
+      aria-label="ELEVÉ — new season"
+    >
+      <ShaderCanvas palette="ember" />
 
-                        {/* Bestseller Tag */}
-                        <div className="flex items-center justify-center sm:justify-start gap-3 mb-4">
-                            <span className="w-10 h-[2px] bg-[#414141]"></span>
-                            <p className="uppercase tracking-widest text-xs md:text-sm font-semibold">
-                                Our Bestsellers
-                            </p>
-                            <span className="w-10 h-[2px] bg-[#414141]"></span>
-                        </div>
+      {/* Floating product cluster */}
+      <motion.div
+        className="absolute bottom-[50%] left-[var(--gutter)] right-[var(--gutter)] top-[calc(var(--nav-h)+56px)] lg:bottom-10 lg:left-[46%]"
+        style={{ y: clusterY, scale: clusterScale, perspective: 1400 }}
+      >
+        <motion.div className="absolute inset-0" style={fine && !reduced ? { rotateX: rotX, rotateY: rotY, transformStyle: "preserve-3d" } : undefined}>
+          {LAYERS.map((l, i) => {
+            const p = featured[i];
+            return (
+              <Layer key={i} layer={l} product={p} index={i} smx={smx} smy={smy} currency={currecy} />
+            );
+          })}
+        </motion.div>
+      </motion.div>
 
-                        {/* Heading */}
-                        <h1 className="prata-regular text-4xl leading-tight sm:text-5xl lg:text-6xl">
-                            Latest <br className="sm:hidden" /> Arrivals
-                        </h1>
+      {/* Darken + gradient for legibility */}
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-ink via-ink/30 to-transparent lg:bg-gradient-to-r lg:from-ink/80 lg:via-ink/20" />
+      <motion.div className="pointer-events-none absolute inset-0 bg-ink" style={{ opacity: veil }} />
 
-                        {/* Description */}
-                        <p className="mt-4 text-gray-600 max-w-md mx-auto sm:mx-0 text-sm sm:text-base">
-                            Discover premium collections curated just for you. Elevate your style
-                            with our newest arrivals.
-                        </p>
+      {/* Meta row */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 1.1, duration: 1 }}
+        className="gutter absolute inset-x-0 top-[calc(var(--nav-h)+20px)] flex items-start justify-between eyebrow text-bone/60"
+      >
+        <span>( SS—26 ) &nbsp;Collection N°04</span>
+        <span className="hidden sm:block">{products.length ? `${pad(products.length, 3)} pieces in store` : "Loading the edit…"}</span>
+      </motion.div>
 
-                        {/* CTA */}
-                        <div className="mt-6 flex items-center justify-center sm:justify-start gap-4">
-                            <button className=" cursor-pointer
-                                                bg-[#414141] text-white px-6 py-3 rounded-full
-                                                text-sm font-medium tracking-wide
-                                                hover:bg-black transition-all duration-300
-                                                active:scale-95 shadow-lg">
-                                Shop Now
-                            </button>
+      {/* Headline + CTA */}
+      <motion.div style={{ y: titleY }} className="gutter absolute inset-x-0 bottom-0 pb-[clamp(88px,13vh,140px)]">
+        <h1 className="display text-[clamp(64px,13.5vw,232px)] leading-[0.84]">
+          <SplitText text="Above" trigger="mount" by="char" stagger={0.045} delay={0.25} duration={1.2} className="block" />
+          <SplitText
+            text="*ordinary.*"
+            trigger="mount"
+            by="char"
+            stagger={0.045}
+            delay={0.5}
+            duration={1.2}
+            className="block pl-[0.6em] sm:pl-[1.4em]"
+            accentClassName="italic text-ember"
+          />
+        </h1>
 
-                            <span className="hidden sm:block w-12 h-[1px] bg-[#414141]"></span>
-                        </div>
-                    </div>
-                </div>
-
-
-
-
-                {/* hero right - carousel */}
-                <div className="relative w-full sm:w-1/2 h-[350px] sm:h-[450px] overflow-hidden order-1 sm:order-2">
-
-                    {slides.map((slide, index) => (
-                        <div key={index} className={`absolute inset-0 transition-all duration-700 ease-in-out ${index === current ? "opacity-100 scale-100" : "opacity-0 scale-105"}`}>
-                            <img
-                                src={slide.img}
-                                alt="hero"
-                                className="w-full h-full object-cover"
-                            />
-
-                            {/* text overlay */}
-                            <div className="absolute inset-0 bg-black/25 flex items-end p-6 sm:p-10">
-                                <div className="text-white animate-fadeInUp">
-                                    <h2 className="prata-regular text-2xl sm:text-4xl font-bold">
-                                        {slide.title}
-                                    </h2>
-                                    <p className="mt-1 text-sm sm:text-base text-gray-200">
-                                        {slide.subtitle}
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                    ))}
-
-                    {/* left button */}
-                    <button
-                        onClick={prevSlide}
-                        className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/70 backdrop-blur-md p-3 rounded-full shadow-lg hover:scale-110 transition"
-                    >
-                        <ChevronLeft className="w-5 h-5" />
-                    </button>
-
-                    {/* right button */}
-                    <button
-                        onClick={nextSlide}
-                        className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/70 backdrop-blur-md p-3 rounded-full shadow-lg hover:scale-110 transition"
-                    >
-                        <ChevronRight className="w-5 h-5" />
-                    </button>
-
-                    {/* indicators */}
-                    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
-                        {slides.map((_, i) => (
-                            <span
-                                key={i}
-                                className={`h-2 rounded-full transition-all duration-300 cursor-pointer
-                  ${i === current ? "w-6 bg-[#414141]" : "w-2 bg-gray-400"}`}
-                                onClick={() => setCurrent(i)}
-                            />
-                        ))}
-                    </div>
-                </div>
-            </div>
+        <div className="mt-8 flex flex-col gap-6 sm:mt-10 sm:flex-row sm:items-end sm:gap-12 lg:max-w-[46%] lg:flex-col lg:items-start lg:gap-7">
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 1.15, duration: 1, ease: ease.out }}
+            className="max-w-sm text-[15px] leading-relaxed text-bone/70"
+          >
+            Considered garments for people who’d rather be remembered than noticed. Cut in small runs, shipped worldwide.
+          </motion.p>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 1.3, duration: 1, ease: ease.out }}
+            className="flex flex-wrap items-center gap-3"
+          >
+            <Button to="/collection" variant="light" size="lg" magnetic cursor="">Shop the collection</Button>
+            <a href="#latest" className="group flex h-14 items-center gap-2 px-4 label-ui text-bone/80 hover:text-bone">
+              <span className="link-line">New arrivals</span>
+            </a>
+          </motion.div>
         </div>
-    );
+      </motion.div>
+
+      {/* Scroll cue */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 1.8 }}
+        className="absolute bottom-6 right-[var(--gutter)] hidden items-center gap-3 eyebrow text-bone/50 sm:flex"
+        aria-hidden="true"
+      >
+        Scroll
+        <span className="relative block h-10 w-px overflow-hidden bg-bone/20">
+          <motion.span
+            className="absolute left-0 top-0 block h-1/2 w-px bg-ember"
+            animate={reduced ? {} : { y: ["-100%", "220%"] }}
+            transition={{ duration: 1.6, repeat: Infinity, ease: ease.inOut }}
+          />
+        </span>
+      </motion.div>
+    </section>
+  );
+};
+
+const Layer = ({ layer, product, index, smx, smy, currency }) => {
+  const x = useTransform(smx, [-1, 1], [-layer.d, layer.d]);
+  const y = useTransform(smy, [-1, 1], [-layer.d * 0.6, layer.d * 0.6]);
+
+  return (
+    <motion.div
+      className={`absolute ${layer.cls} ${index !== 1 ? "hidden sm:block" : ""}`}
+      style={{ x, y, z: layer.z, transformStyle: "preserve-3d" }}
+    >
+      <motion.div
+        initial={{ opacity: 0, clipPath: "inset(100% 0% 0% 0%)", scale: 1.15 }}
+        animate={{ opacity: 1, clipPath: "inset(0% 0% 0% 0%)", scale: 1 }}
+        transition={{ delay: layer.delay, duration: 1.4, ease: ease.inOut }}
+      >
+        <div className="animate-float" style={{ animationDelay: layer.float }}>
+          {product ? (
+            <Link to={`/product/${product._id}`} className="group block" data-cursor="View" tabIndex={-1} aria-hidden="true">
+              <div className="aspect-[3/4] overflow-hidden bg-stone-2 shadow-[var(--shadow-float)]">
+                <img
+                  src={img(product.images?.[0], index === 1 ? 900 : 600)}
+                  alt=""
+                  fetchPriority={index === 1 ? "high" : "auto"}
+                  className="h-full w-full object-cover transition-transform duration-[1.2s] ease-[var(--ease-out-expo)] group-hover:scale-105"
+                />
+              </div>
+              <div className="mt-2 flex justify-between gap-2 font-mono text-[10px] uppercase tracking-wider text-bone/70">
+                <span className="truncate">{product.name}</span>
+                <span className="shrink-0 text-ember">{currency}{product.price}</span>
+              </div>
+            </Link>
+          ) : (
+            <div className="aspect-[3/4] bg-bone/5 ring-1 ring-bone/10" />
+          )}
+        </div>
+      </motion.div>
+    </motion.div>
+  );
 };
 
 export default Hero;
-

@@ -1,112 +1,36 @@
-import React, { useContext, useEffect, useRef, useState } from "react";
-import { ShopContext } from "../context/ShopContext";
-import { motion } from "framer-motion";
-import { Link } from "react-router-dom";
+import { useContext, useMemo } from "react";
+import { ShopContext } from "../context/shop-context";
+import ProductItem from "./ProductItem";
 import Tittle from "./Tittle";
+import Rail from "./ui/Rail";
 
+// Same category (+ sub-category when it matches), excluding the current piece.
+// Note: the API field is `subcategory`; the old code compared `subCategory`,
+// which was always undefined. Both are accepted now.
 const RelatedProduct = ({ category, subCategory, currentId }) => {
-  const { products, currecy } = useContext(ShopContext);
-  const [related, setRelated] = useState([]);
-  const sliderRef = useRef(null);
+  const { products } = useContext(ShopContext);
 
-  useEffect(() => {
-    if (!products.length) return;
-
-    const filteredProducts = products
-      .filter(
-        (item) =>
-          item.category === category &&
-          item.subCategory === subCategory &&
-          item._id !== currentId
-      )
-      .slice(0, 6);
-
-    setRelated(filteredProducts);
+  const related = useMemo(() => {
+    const sameCat = products.filter((p) => p.category === category && p._id !== currentId);
+    const sameSub = sameCat.filter((p) => (p.subcategory || p.subCategory) === subCategory);
+    return (sameSub.length >= 4 ? sameSub : sameCat).slice(0, 8);
   }, [products, category, subCategory, currentId]);
 
-  const slide = (direction) => {
-    if (!sliderRef.current) return;
-
-    const cardWidth = 180;
-    sliderRef.current.scrollBy({
-      left: direction === "next" ? cardWidth : -cardWidth,
-      behavior: "smooth",
-    });
-  };
-
-  if (!related.length) return null; // optional: hide if no related products
+  if (!related.length) return null;
 
   return (
-    <div className="mt-16 relative">
-      {/* HEADER */}
-      <div className="text-center max-w-3xl mx-auto mb-14 px-4">
-        <Tittle text1={"RELATED"} text2={"PRODUCTS"} />
-        <p className="mt-4 text-sm sm:text-base text-gray-500 leading-relaxed">
-          Find products similar to what you’re viewing.
-        </p>
+    <section className="border-t border-ink/10 pt-20" aria-labelledby="related-title">
+      <div className="gutter mb-10 flex items-end justify-between">
+        <Tittle text1="YOU MAY" text2="ALSO LIKE" eyebrow="( More ) — Same wardrobe" size="sm" />
       </div>
-
-      {/* CAROUSEL */}
-      <div className=" mb-2 relative mt-16 px-4 group">
-        {/* PREV */}
-        <button
-          onClick={() => slide("prev")}
-          className="hidden sm:flex absolute left-2 top-1/2 -translate-y-1/2 z-20
-                     w-12 h-12 rounded-full bg-gray-100 shadow-md items-center justify-center"
-        >
-          ‹
-        </button>
-
-        {/* SCROLLER */}
-        <div
-          ref={sliderRef}
-          className="flex gap-6 pt-6 pb-6 overflow-x-auto scroll-smooth scrollbar-hide"
-        >
-          {related.map((item) => (
-            <motion.div
-              key={item._id}
-              whileHover={{ y: -6 }}
-              className="flex-shrink-0
-                         w-[260px] h-[300px]
-                         sm:w-[280px] sm:h-[330px]
-                         md:w-[300px] md:h-[340px]
-                         lg:w-[250px] lg:h-[300px]"
-            >
-              <Link
-                to={`/product/${item._id}`}
-                
-                className="group w-full h-full rounded-2xl bg-white shadow-sm hover:shadow-xl
-                           transition flex flex-col items-center justify-center"
-              >
-                <div className="relative w-full h-full overflow-hidden rounded-xl bg-gray-50">
-                  <img
-                    src={item.images[0]}
-                    alt={item.name}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                  />
-                </div>
-
-                <div className="mt-2 text-center">
-                  <p className="text-sm font-medium">{item.name}</p>
-                  <p className="text-xs text-gray-500 pt-2 pb-3">
-                    {currecy}{item.price}
-                  </p>
-                </div>
-              </Link>
-            </motion.div>
-          ))}
-        </div>
-
-        {/* NEXT */}
-        <button
-          onClick={() => slide("next")}
-          className="hidden sm:flex absolute right-2 top-1/2 -translate-y-1/2 z-20
-                     w-12 h-12 rounded-full bg-gray-100 shadow-md items-center justify-center"
-        >
-          ›
-        </button>
-      </div>
-    </div>
+      <Rail label="Related products">
+        {related.map((item, i) => (
+          <div key={item._id} className="w-[60vw] shrink-0 snap-start sm:w-[32vw] lg:w-[21vw]">
+            <ProductItem id={item._id} images={item.images} name={item.name} price={item.price} index={i} category={item.category} />
+          </div>
+        ))}
+      </Rail>
+    </section>
   );
 };
 

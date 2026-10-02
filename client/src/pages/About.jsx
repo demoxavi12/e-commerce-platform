@@ -1,123 +1,68 @@
-import React from "react";
-import { motion } from "framer-motion";
-import Tittle from "../components/Tittle";
+import { useRef } from "react";
+import { motion, useScroll, useTransform, useReducedMotion } from "framer-motion";
 import assets from "../assets/assets";
 import NewsLetterBox from "../components/NewsLetterBox";
+import SplitText from "../components/motion/SplitText";
+import Reveal from "../components/motion/Reveal";
+import { pad } from "../lib/motion";
 
-const fadeUp = {
-  hidden: { opacity: 0, y: 30 },
-  visible: { opacity: 1, y: 0 },
-};
+const values = [
+  { title: "Quality assurance", text: "We ensure every product meets strict quality standards before reaching you." },
+  { title: "Convenience", text: "Shop effortlessly with smooth navigation, fast delivery, and secure checkout." },
+  { title: "Exceptional support", text: "Our support team is always available to help you at every step." },
+];
 
 const About = () => {
+  const ref = useRef(null);
+  const reduced = useReducedMotion();
+  const { scrollYProgress } = useScroll({ target: ref, offset: ["start end", "end start"] });
+  const y = useTransform(scrollYProgress, [0, 1], reduced ? ["0%", "0%"] : ["-10%", "10%"]);
+
   return (
-    <div className="border-t border-gray-300">
-      {/* ================= ABOUT HEADER ================= */}
-      <section className="px-4 sm:px-8 pt-10 sm:pt-14">
-        <motion.div
-          initial="hidden"
-          animate="visible"
-          variants={fadeUp}
-          transition={{ duration: 0.6 }}
-          className="text-center mb-14"
-        >
-          <Tittle text1="ABOUT" text2="US" />
-        </motion.div>
+    <div className="page-top">
+      <header className="gutter pb-16 pt-8 sm:pt-14">
+        <p className="eyebrow text-mute">( About ) — Est. for the in-between hours</p>
+        <h1 className="display mt-5 max-w-[14ch] text-[clamp(56px,9vw,152px)]">
+          <SplitText text="Fewer things, *made better.*" trigger="mount" accentClassName="italic text-ember" />
+        </h1>
+      </header>
 
-        {/* ================= ABOUT CONTENT ================= */}
-        <div className="max-w-6xl mx-auto">
-          <motion.div
-            initial={{ opacity: 0, x: -40 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-            className="flex flex-col md:flex-row gap-12 items-center"
-          >
-            {/* Image */}
-            <img
-              src={assets.about_img}
-              alt="About us"
-              className="w-full md:max-w-[450px] rounded-2xl shadow-md"
-            />
-
-            {/* Text */}
-            <div className="flex flex-col gap-6 text-gray-700 text-[15px] leading-relaxed">
-              <p>
-                Lorem ipsum dolor sit amet consectetur adipisicing elit. Quasi
-                nihil adipisci atque fugiat quidem. Voluptatibus corrupti,
-                impedit cumque debitis perspiciatis amet minima facere
-                molestias.
-              </p>
-
-              <p>
-                Lorem ipsum dolor sit amet consectetur adipisicing elit. Tempora
-                molestias fuga tenetur culpa mollitia optio voluptatum magnam
-                earum cupiditate.
-              </p>
-
-              <h3 className="text-lg font-semibold mt-6 tracking-wide">
-                OUR MISSION
-              </h3>
-
-              <p>
-                Lorem ipsum dolor sit amet consectetur adipisicing elit. Eos
-                consequatur consectetur illo, dolores amet dicta pariatur ex
-                hic dolore laudantium officiis reiciendis.
-              </p>
-            </div>
-          </motion.div>
+      <section className="gutter grid gap-12 pb-24 md:grid-cols-[1fr_1fr] md:items-center md:gap-20">
+        <Reveal variant="clip" className="relative aspect-[4/5] overflow-hidden bg-stone-2" ref={ref}>
+          <motion.img src={assets.about_img} alt="Inside the ELEVÉ studio" loading="lazy" style={{ y, scale: 1.2 }} className="h-full w-full object-cover" />
+        </Reveal>
+        <div className="space-y-6 text-[17px] leading-relaxed text-mute">
+          <Reveal>
+            <p>
+              <span className="text-ink">ELEVÉ began with a simple frustration:</span> clothes that look good for a season and give up by the next. So we started
+              making the opposite — garments cut from heavier cloth, finished properly, and designed to be worn hard.
+            </p>
+          </Reveal>
+          <Reveal delay={0.1}>
+            <p>We work in small runs with workshops we know by name. That keeps quality high, waste low, and every drop worth waiting for.</p>
+          </Reveal>
+          <Reveal delay={0.2}>
+            <p className="eyebrow pt-4 text-ink">Our mission</p>
+            <p className="mt-3">To make the everyday feel considered — pieces that are quietly excellent, honestly priced, and built to stay in your rotation for years.</p>
+          </Reveal>
         </div>
       </section>
 
-      {/* ================= WHY CHOOSE US ================= */}
-      <section className="px-4 sm:px-8 mt-20">
-        <motion.div
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true }}
-          variants={fadeUp}
-          transition={{ duration: 0.6 }}
-          className="text-center mb-12"
-        >
-          <Tittle text1="WHY" text2="CHOOSE US" />
-        </motion.div>
-
-        <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-6 mb-24">
-          {[
-            {
-              title: "Quality Assurance",
-              text: "We ensure every product meets strict quality standards before reaching you.",
-            },
-            {
-              title: "Convenience",
-              text: "Shop effortlessly with smooth navigation, fast delivery, and secure checkout.",
-            },
-            {
-              title: "Exceptional Support",
-              text: "Our support team is always available to help you at every step.",
-            },
-          ].map((item, index) => (
-            <motion.div
-              key={index}
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: index * 0.15 }}
-              whileHover={{ y: -6 }}
-              className="bg-white border border-gray-200 rounded-2xl p-8 shadow-sm hover:shadow-lg transition"
-            >
-              <h4 className="text-sm font-semibold tracking-widest mb-3">
-                {item.title}
-              </h4>
-              <p className="text-gray-600 text-sm leading-relaxed">
-                {item.text}
-              </p>
-            </motion.div>
+      <section className="gutter border-t border-ink/10 pt-16" aria-labelledby="why-title">
+        <h2 id="why-title" className="display text-[clamp(44px,6vw,96px)]">
+          <SplitText text="Why *choose us*" accentClassName="italic text-ember" />
+        </h2>
+        <div className="mt-12 grid gap-px bg-ink/10 md:grid-cols-3">
+          {values.map((item, i) => (
+            <Reveal key={item.title} delay={i * 0.12} className="group bg-bone p-8 transition-colors duration-500 hover:bg-ink hover:text-bone">
+              <p className="eyebrow text-mute group-hover:text-bone/50">{pad(i + 1)}</p>
+              <h3 className="display mt-10 text-4xl">{item.title}</h3>
+              <p className="mt-3 text-[15px] leading-relaxed text-mute group-hover:text-bone/70">{item.text}</p>
+            </Reveal>
           ))}
         </div>
       </section>
 
-      {/* ================= NEWSLETTER ================= */}
       <NewsLetterBox />
     </div>
   );

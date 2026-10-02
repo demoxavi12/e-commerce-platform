@@ -1,10 +1,10 @@
-import { createContext, use, useEffect, useState, } from "react";
+import { useEffect, useState } from "react";
+import { ShopContext } from "./shop-context";
 import { limited as limitedAssets } from '../assets/assets';
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 import axios from 'axios';
 
-export const ShopContext = createContext();
 
 const ShopContextProvider = (props) => {
 
@@ -16,11 +16,12 @@ const ShopContextProvider = (props) => {
     const [cartItems, setCartItems] = useState({}); // { productId: quantity }
     const navigate = useNavigate();
     const [products, setProducts] = useState([]);
-    const [token, setToken] = useState(null);
+    // Restore the session synchronously so the first render already knows the user.
+    const [token, setToken] = useState(() => localStorage.getItem('token'));
 
-    const [limitedProduct, setLimitedProduct] = useState(limitedAssets);
+    const [limitedProduct] = useState(limitedAssets);
 
-    const addToCart = async (itemId, size) => {
+    const addToCart = async (itemId, size, quantity = 1) => {
 
         let cartDate = structuredClone(cartItems);
 
@@ -32,14 +33,14 @@ const ShopContextProvider = (props) => {
 
         if (cartDate[itemId]) {
             if (cartDate[itemId][size]) {
-                cartDate[itemId][size] += 1;
+                cartDate[itemId][size] += quantity;
             }
             else {
-                cartDate[itemId][size] = 1;
+                cartDate[itemId][size] = quantity;
             }
         } else {
             cartDate[itemId] = {};
-            cartDate[itemId][size] = 1;
+            cartDate[itemId][size] = quantity;
         }
         setCartItems(cartDate);
 
@@ -47,6 +48,10 @@ const ShopContextProvider = (props) => {
         if (token) {
             try {
                 await axios.post(backendUrl + "/api/cart/add", { itemId, size }, { headers: { Authorization: `Bearer ${token}` } });
+                // /cart/add increments by one; sync any extra quantity with /cart/update
+                if (quantity > 1) {
+                    await axios.post(backendUrl + "/api/cart/update", { itemId, size, quantity: cartDate[itemId][size] }, { headers: { Authorization: `Bearer ${token}` } });
+                }
             } catch (error) {
                 console.log(error);
 
@@ -107,20 +112,6 @@ const ShopContextProvider = (props) => {
 
 
 
-    const getUserCart = async (token) => {
-        try {
-            const response = await axios.post(backendUrl + "/api/cart/get", {}, { headers: { Authorization: `Bearer ${token}` } });
-            if (response.data.success) {
-                setCartItems(response.data.cartData);
-            }
-        } catch (error) {
-            console.log(error);
-            toast.error("Something went wrong");
-
-        }
-    }
-
-
     const getCartAmount = () => {
         let totalAmount = 0;
 
@@ -144,42 +135,52 @@ const ShopContextProvider = (props) => {
 
 
 
-    const getProductdata = async () => {
-        try {
-            // Check if backendUrl exists to avoid sending requests to "undefined"
-            if (!backendUrl) {
-                console.error("VITE_BACKEND_URL is not defined in your .env file");
-                return;
-            }
-            const response = await axios.get(`${backendUrl}/api/product/list`);
-
-            if (response.data.success) {
-                setProducts(response.data.products);
-            } else {
-                toast.error(response.data.message);
-            }
-        } catch (error) {
-            console.log(error);
-            toast.error(error.message);
+    // Product catalogue (once per backend URL).
+    useEffect(() => {
+        // Check if backendUrl exists to avoid sending requests to "undefined"
+        if (!backendUrl) {
+            console.error("VITE_BACKEND_URL is not defined in your .env file");
+            return;
         }
+        axios.get(`${backendUrl}/api/product/list`)
+            .then((response) => {
+                if (response.data.success) {
+                    setProducts(response.data.products);
+                } else {
+                    toast.error(response.data.message);
+                }
+            })
+            .catch((error) => {
+                console.log(error);
+                toast.error(error.message);
+            });
+    }, [backendUrl])
+
+    // Server cart for a restored session (same behaviour as before: on load only).
+    useEffect(() => {
+        const stored = localStorage.getItem('token');
+        if (!stored || !backendUrl) return;
+        axios.post(backendUrl + "/api/cart/get", {}, { headers: { Authorization: `Bearer ${stored}` } })
+            .then((response) => {
+                if (response.data.success) {
+                    setCartItems(response.data.cartData);
+                }
+            })
+            .catch((error) => {
+                console.log(error);
+                toast.error("Something went wrong");
+            });
+    }, [backendUrl])
+
+    const logout = () => {
+        localStorage.removeItem('token')
+        setToken(null)
+        setCartItems({})
+        navigate('/login')
     }
 
-
-    useEffect(() => {
-        getProductdata()
-    }, [])
-
-
-
-    useEffect(() => {
-        if (!token && localStorage.getItem('token')) {
-            setToken(localStorage.getItem('token'))
-            getUserCart(localStorage.getItem('token'))
-        }
-    })
-
     const value = {
-        products, currecy, shippingCost, search, setSearch, showSearch, setShowSearch, cartItems, addToCart, getCartCount, updateQuantity,
+        products, currecy, currency: currecy, logout, shippingCost, search, setSearch, showSearch, setShowSearch, cartItems, addToCart, getCartCount, updateQuantity,
         getCartAmount,setCartItems, navigate, backendUrl, limitedProduct, token, setToken,
     }  // add state and functions as needed
     return (

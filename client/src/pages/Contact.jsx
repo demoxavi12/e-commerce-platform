@@ -1,161 +1,90 @@
-import React from "react";
-import { motion } from "framer-motion";
-import Tittle from "../components/Tittle";
-import NewsLetterBox from "../components/NewsLetterBox";
+import { useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import { Check } from "lucide-react";
 import assets from "../assets/assets";
-
-const fadeUp = {
-  hidden: { opacity: 0, y: 30 },
-  visible: { opacity: 1, y: 0 },
-};
+import NewsLetterBox from "../components/NewsLetterBox";
+import SplitText from "../components/motion/SplitText";
+import Reveal from "../components/motion/Reveal";
+import Field from "../components/ui/Field";
+import Button from "../components/ui/Button";
+import { ease } from "../lib/motion";
 
 const Contact = () => {
+  // There is no contact API, so the form does not send anything; the
+  // confirmation is explicit about that and points to the support address.
+  const [sent, setSent] = useState(false);
+
   return (
-    <div className="border-t border-gray-300">
-      {/* ================= HEADER ================= */}
-      <section className="px-4 items-center sm:px-8 pt-10 sm:pt-14">
-        <motion.div
-          initial="hidden"
-          animate="visible"
-          variants={fadeUp}
-          transition={{ duration: 0.6 }}
-          className="text-center mb-16"
-        >
-          <Tittle text1="CONTACT" text2="US" />
-          <p className="text-gray-500 text-sm mt-3">
-            We’d love to hear from you. Let’s get in touch.
-          </p>
-        </motion.div>
+    <div className="page-top">
+      <header className="gutter pb-16 pt-8 sm:pt-14">
+        <p className="eyebrow text-mute">( Contact ) — We reply within a day</p>
+        <h1 className="display mt-5 text-[clamp(56px,10vw,168px)]">
+          <SplitText text="Say *hello.*" trigger="mount" accentClassName="italic text-ember" />
+        </h1>
+      </header>
 
-        {/* ================= STORE INFO ================= */}
-        <motion.div
-          initial={{ opacity: 0, y: 40 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
-          className='my-10 flex flex-col justify-center md:flex-row gap-10 mb-28'
-        >
-          {/* Image */}
-          <img
-            src={assets.contact_img}
-            alt="Contact"
-            className="w-full md:max-w-[480px] rounded-2xl shadow-md"
-          />
-
-          {/* Info */}
-          <div className="flex flex-col  gap-5 text-sm mt-18 text-gray-600">
-            <h3 className="text-base font-semibold tracking-widest">
-              OUR STORE
-            </h3>
-
-            <p className="leading-relaxed">
-              54709 Willms Station <br />
-              Suite 350, Washington, USA
-            </p>
-
-            <p className="leading-relaxed">
-              Tel: (415) 555-0132 <br />
-              Email: admin@eleve.com
-            </p>
-
-            <h3 className="text-base font-semibold tracking-widest mt-4">
-              CAREERS AT ELEVÉ
-            </h3>
-
-            <p>
-              Learn more about our teams and current job openings.
-            </p>
-
-            <motion.button
-              whileHover={{ scale: 1.03 }}
-              whileTap={{ scale: 0.95 }}
-              className="mt-3 w-fit px-8 py-3 rounded-xl bg-black text-white text-xs tracking-widest hover:bg-gray-900 transition shadow-md"
-            >
-              EXPLORE CAREERS
-            </motion.button>
-          </div>
-        </motion.div>
-
-        {/* ================= CONTACT FORM & INFO ================= */}
-        <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-12 mb-24">
-          {/* Form */}
-          <motion.div
-            initial={{ opacity: 0, x: -40 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-            className="bg-white rounded-2xl shadow-lg p-6 sm:p-8"
-          >
-            <h3 className="text-lg font-semibold mb-6 tracking-wide">
-              Send Us a Message
-            </h3>
-
-            <form className="space-y-4">
-              <Input placeholder="Your Name" />
-              <Input type="email" placeholder="Email Address" />
-              <textarea
-                rows="5"
-                placeholder="Your Message"
-                className="w-full text-sm border border-gray-300 px-4 py-3 rounded-xl
-                           focus:outline-none focus:ring-2 focus:ring-black/20 resize-none"
-              />
-
-              <motion.button
-                whileHover={{ scale: 1.03 }}
-                whileTap={{ scale: 0.95 }}
-                className="w-full mt-4 py-3 rounded-xl bg-black text-white text-sm tracking-widest hover:bg-gray-900 transition shadow-md"
-              >
-                SEND MESSAGE
-              </motion.button>
-            </form>
-          </motion.div>
-
-          {/* Contact Info */}
-          <motion.div
-            initial={{ opacity: 0, x: 40 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-            className="flex flex-col gap-6 justify-center"
-          >
-            <div className="bg-gray-50 border border-gray-200 rounded-2xl p-6 shadow-sm">
-              <h4 className="text-sm font-semibold tracking-widest mb-2">
-                CUSTOMER SUPPORT
-              </h4>
-              <p className="text-gray-600 text-sm">support@eleve.com</p>
-              <p className="text-gray-600 text-sm mt-1">
-                +91 98765 43210
-              </p>
-            </div>
-
-            <div className="bg-gray-50 border border-gray-200 rounded-2xl p-6 shadow-sm">
-              <h4 className="text-sm font-semibold tracking-widest mb-2">
-                BUSINESS HOURS
-              </h4>
-              <p className="text-gray-600 text-sm">
-                Mon – Sat : 10:00 AM – 7:00 PM
-              </p>
-            </div>
-          </motion.div>
+      <section className="gutter grid gap-14 pb-24 md:grid-cols-2 md:gap-20">
+        <div>
+          <Reveal variant="clip" className="aspect-[4/3] overflow-hidden bg-stone-2">
+            <img src={assets.contact_img} alt="The ELEVÉ store" loading="lazy" className="h-full w-full object-cover" />
+          </Reveal>
+          <dl className="mt-10 grid gap-8 sm:grid-cols-2">
+            {[
+              ["Our store", <>54709 Willms Station<br />Suite 350, Washington, USA</>],
+              ["Talk to us", <>Tel: (415) 555-0132<br />admin@eleve.com</>],
+              ["Customer support", <>support@eleve.com<br />+91 98765 43210</>],
+              ["Business hours", <>Mon – Sat<br />10:00 AM – 7:00 PM</>],
+            ].map(([t, v], i) => (
+              <Reveal key={t} delay={i * 0.08}>
+                <dt className="eyebrow text-mute">{t}</dt>
+                <dd className="mt-2 text-[15px] leading-relaxed">{v}</dd>
+              </Reveal>
+            ))}
+          </dl>
         </div>
+
+        <Reveal className="md:pt-4">
+          <h2 className="display text-4xl sm:text-5xl">Send us a message</h2>
+          <AnimatePresence mode="wait">
+            {sent ? (
+              <motion.div key="ok" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, ease: ease.out }} className="mt-10 border-y border-ink/10 py-12" role="status">
+                <span className="flex h-12 w-12 items-center justify-center rounded-full bg-ember"><Check size={20} /></span>
+                <p className="display mt-6 text-4xl">Thanks for writing.</p>
+                <p className="mt-2 text-mute">This demo form isn’t connected to email yet — please reach us at support@eleve.com.</p>
+              </motion.div>
+            ) : (
+              <motion.form
+                key="form"
+                exit={{ opacity: 0, y: -12 }}
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  setSent(true);
+                }}
+                className="mt-8 space-y-5"
+              >
+                <Field label="Your name" required autoComplete="name" />
+                <Field label="Email address" type="email" required autoComplete="email" />
+                <Field label="Your message" as="textarea" rows={5} required />
+                <div className="pt-4">
+                  <Button type="submit" size="lg">Send message</Button>
+                </div>
+              </motion.form>
+            )}
+          </AnimatePresence>
+
+          <div className="mt-16 border-t border-ink/10 pt-8">
+            <p className="eyebrow text-mute">Careers at ELEVÉ</p>
+            <p className="mt-3 max-w-sm text-[15px] text-mute">Learn more about our teams and current job openings.</p>
+            <div className="mt-5">
+              <Button variant="outline" size="sm">Explore careers</Button>
+            </div>
+          </div>
+        </Reveal>
       </section>
 
-      {/* ================= NEWSLETTER ================= */}
       <NewsLetterBox />
     </div>
   );
 };
-
-/* ================= REUSABLE INPUT ================= */
-const Input = ({ type = "text", placeholder }) => (
-  <motion.input
-    whileFocus={{ scale: 1.01 }}
-    type={type}
-    placeholder={placeholder}
-    className="w-full text-sm border border-gray-300 px-4 py-3 rounded-xl
-               focus:outline-none focus:ring-2 focus:ring-black/20"
-    required
-  />
-);
 
 export default Contact;

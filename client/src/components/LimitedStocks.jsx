@@ -1,95 +1,51 @@
 import { useContext, useRef } from "react";
-import { ShopContext } from "../context/ShopContext";
-import { motion } from "framer-motion";
-import { Link } from "react-router-dom";
+import { ArrowLeft, ArrowRight } from "lucide-react";
+import { ShopContext } from "../context/shop-context";
+import ProductItem from "./ProductItem";
 import Tittle from "./Tittle";
+import Rail from "./ui/Rail";
 
+// Limited-stock rail: native horizontal scroll + snap, arrow controls on desktop.
 const LimitedStocks = () => {
-    const { products, currecy } = useContext(ShopContext);
-    const sliderRef = useRef(null);
+  const { products } = useContext(ShopContext);
+  const sliderRef = useRef(null);
+  const limitedProducts = products.filter((item) => item.limitedStocks === true);
 
-    // ✅ FILTER LIMITED STOCK PRODUCTS
-    const limitedProducts = products.filter(
-        (item) => item.limitedStocks === true
-    );
+  const slide = (direction) => {
+    const el = sliderRef.current;
+    if (!el) return;
+    el.scrollBy({ left: (direction === "next" ? 1 : -1) * el.clientWidth * 0.7, behavior: "smooth" });
+  };
 
-    const slide = (direction) => {
-        if (!sliderRef.current) return;
+  if (!limitedProducts.length) return null;
 
-        const cardWidth = 180;
-        sliderRef.current.scrollBy({
-            left: direction === "next" ? cardWidth : -cardWidth,
-            behavior: "smooth",
-        });
-    };
-
-    return (
-        <div className="mt-16 px-4 relative">
-            {/* ===== HEADER ===== */}
-            <div className="text-center max-w-3xl mx-auto mb-14 px-4">
-                <Tittle text1={"LIMITED"} text2={"EDITIONS"} />
-                <p className="mt-4 text-sm sm:text-base text-gray-500 leading-relaxed">
-                    Explore our Limited Stocks collection — exclusive, rare finds that won't last long.
-                </p>
-            </div>
-
-            {/* ===== CAROUSEL ===== */}
-            <div className=" relative mt-5 group">
-                {/* PREV */}
-                <button
-                    onClick={() => slide("prev")}
-                    className="hidden sm:flex absolute left-2 top-1/2 -translate-y-1/2 z-20
-                     w-12 h-12 rounded-full bg-gray-100 shadow-md items-center justify-center"
-                >
-                    ‹
-                </button>
-
-                {/* SCROLLER */}
-                <div
-                    ref={sliderRef}
-                    className="flex gap-6 pt-6 pb-6 overflow-x-auto scroll-smooth scrollbar-hide"
-                >
-                    {limitedProducts.map((item) => (
-                        <motion.div
-                            key={item._id}
-                            whileHover={{ y: -6 }}
-                            className="flex-shrink-0
-                         w-[160px] h-[160px]
-                         sm:w-[190px] sm:h-[190px]
-                         md:w-[220px] md:h-[220px]
-                         lg:w-[250px] lg:h-[250px]"
-                        >
-                            <Link
-                                to={`/product/${item._id}`}
-                                className="group w-full h-full rounded-2xl bg-white shadow-sm hover:shadow-xl
-                           transition flex flex-col items-center justify-center"
-                            >
-                                <div className="relative w-full h-full overflow-hidden rounded-xl bg-gray-50">
-                                    <img
-                                        src={item.images[0]}
-                                        alt={item.name}
-                                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                                    />
-                                </div>
-
-                                {/* OPTIONAL INFO */}
-                                
-                            </Link>
-                        </motion.div>
-                    ))}
-                </div>
-
-                {/* NEXT */}
-                <button
-                    onClick={() => slide("next")}
-                    className="hidden sm:flex absolute right-2 top-1/2 -translate-y-1/2 z-20
-                     w-12 h-12 rounded-full bg-gray-100 shadow-md items-center justify-center"
-                >
-                    ›
-                </button>
-            </div>
+  return (
+    <section className="pt-28" aria-labelledby="limited-rail-title">
+      <div className="gutter mb-10 flex items-end justify-between gap-6">
+        <Tittle text1="LIMITED" text2="EDITIONS" eyebrow="( Rare ) — Won’t restock" />
+        <div className="hidden gap-2 sm:flex">
+          {[["prev", ArrowLeft], ["next", ArrowRight]].map(([dir, Icon]) => (
+            <button
+              key={dir}
+              type="button"
+              onClick={() => slide(dir)}
+              aria-label={dir === "next" ? "Next products" : "Previous products"}
+              className="flex h-12 w-12 items-center justify-center rounded-full border border-ink/20 transition-colors hover:border-ink hover:bg-ink hover:text-bone"
+            >
+              <Icon size={16} />
+            </button>
+          ))}
         </div>
-    );
+      </div>
+      <Rail ref={sliderRef} label="Limited editions">
+        {limitedProducts.map((item, i) => (
+          <div key={item._id} className="w-[64vw] shrink-0 snap-start sm:w-[34vw] lg:w-[22vw]">
+            <ProductItem id={item._id} images={item.images} name={item.name} price={item.price} index={i} tag="Limited" />
+          </div>
+        ))}
+      </Rail>
+    </section>
+  );
 };
 
 export default LimitedStocks;

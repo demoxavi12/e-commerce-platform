@@ -1,44 +1,34 @@
-import React, { useContext } from 'react'
-import { ShopContext } from '../context/ShopContext';
-import Tittle from './Tittle';
+import { useContext } from "react";
+import { ShopContext } from "../context/shop-context";
+import AnimatedNumber from "./motion/AnimatedNumber";
+import { formatPrice } from "../lib/motion";
 
-const CartTotal = () => {
+// Totals block (cart page + checkout). Same math as before:
+// total = subtotal + shipping, or 0 when the bag is empty.
+const CartTotal = ({ dark = false }) => {
+  const { currecy, getCartAmount, shippingCost } = useContext(ShopContext);
+  const subtotal = getCartAmount();
+  const total = subtotal === 0 ? 0 : subtotal + shippingCost;
+  const fmt = (n) => formatPrice(currecy, n);
+  const line = dark ? "border-bone/15" : "border-ink/10";
+  const mute = dark ? "text-bone/60" : "text-mute";
 
-    const { currecy, getCartAmount, shippingCost } = useContext(ShopContext);
-
-    const subtotal = getCartAmount();
-    const total = subtotal === 0 ? 0 : subtotal + shippingCost;
-
-    return (
-        <div className='w-full'>
-            <div className=' pt-14'>
-                <div className="text-center max-w-3xl mx-auto mb-14 px-4">
-                    <Tittle text1="TOTAL" text2="AMOUNT" />
-                </div>
-
-                <div className='flex flex-col gap-2 mt-2 text-[20px] text-gray-600 mb-4 border-b border-gray-300 pb-4'>
-                    <div className='flex justify-between'>
-                        <p>Subtotal</p>
-                        <p>{currecy} {subtotal}.00</p>
-                    </div>
-                </div>
-
-                
-
-                <div className='flex justify-between text-[20px] text-gray-600 mb-4 border-b border-gray-300 pb-4'>
-                    <p>Shipping Fee</p>
-                    <p>{currecy} {shippingCost}.00</p>
-                </div>
-
-                
-
-                <div className='flex justify-between'>
-                    <p className='text-gray-800 text-2xl'>Total</p>
-                    <p className='text-gray-800 text-2xl' >{currecy} {total}.00</p>
-                </div>
-            </div>
-        </div>
-    )
-}
+  return (
+    <dl className="w-full">
+      <div className={`flex justify-between border-b ${line} py-3 text-[15px]`}>
+        <dt className={mute}>Subtotal</dt>
+        <dd><AnimatedNumber value={subtotal} format={fmt} className="font-mono" /></dd>
+      </div>
+      <div className={`flex justify-between border-b ${line} py-3 text-[15px]`}>
+        <dt className={mute}>Shipping fee</dt>
+        <dd className="font-mono">{fmt(shippingCost)}</dd>
+      </div>
+      <div className="flex items-baseline justify-between pt-5">
+        <dt className="label-ui">Total</dt>
+        <dd><AnimatedNumber value={total} format={fmt} className="display text-4xl sm:text-5xl" /></dd>
+      </div>
+    </dl>
+  );
+};
 
 export default CartTotal;

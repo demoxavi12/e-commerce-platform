@@ -1,162 +1,109 @@
-import React from "react";
-import { motion } from "framer-motion";
-import Tittle from "../components/Tittle";
+import { useContext, useEffect, useState } from "react";
+import axios from "axios";
+import { ShopContext } from "../context/shop-context";
+import SplitText from "../components/motion/SplitText";
+import Reveal from "../components/motion/Reveal";
+import AnimatedNumber from "../components/motion/AnimatedNumber";
+import Button from "../components/ui/Button";
+import { formatPrice } from "../lib/motion";
 
-const fadeUp = {
-  hidden: { opacity: 0, y: 30 },
-  visible: { opacity: 1, y: 0 },
-};
+// There is no profile endpoint (the JWT only carries the user id), so instead
+// of the old hard-coded "John Doe" data, everything here is derived from the
+// user's real orders via the existing /api/order/userorders route.
+const Info = ({ label, value }) => (
+  <div className="border-t border-ink/10 pt-3">
+    <p className="eyebrow text-mute">{label}</p>
+    <p className="mt-1 text-[15px]">{value || <span className="text-mute">—</span>}</p>
+  </div>
+);
 
 const Profile = () => {
+  const { logout, token, backendUrl, currecy } = useContext(ShopContext);
+  const [orders, setOrders] = useState(null);
+
+  useEffect(() => {
+    if (!token) return;
+    axios
+      .post(backendUrl + "/api/order/userorders", {}, { headers: { Authorization: `Bearer ${token}` } })
+      .then((res) => setOrders(res.data.success ? res.data.orders : []))
+      .catch(() => setOrders([]));
+  }, [backendUrl, token]);
+
+  const list = orders || [];
+  const latest = [...list].sort((a, b) => (b.date || 0) - (a.date || 0))[0];
+  const addr = latest?.address || {};
+  const name = [addr.firstName, addr.lastName].filter(Boolean).join(" ");
+  const delivered = list.filter((o) => (o.status || "").toLowerCase() === "delivered").length;
+  const spent = list.reduce((sum, o) => sum + (Number(o.amount) || 0), 0);
+  const initials = (name || "Member").split(" ").map((w) => w[0]).slice(0, 2).join("").toUpperCase();
+
+  if (!token) {
+    return (
+      <div className="page-top gutter pb-10">
+        <div className="border-y border-ink/10 py-24 text-center">
+          <p className="display text-5xl">Sign in to see your profile</p>
+          <div className="mt-6"><Button to="/login">Sign in</Button></div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="border-t border-gray-300 px-4 sm:px-8 py-10">
-      
-      {/* ================= HEADER ================= */}
-      <motion.div
-        initial="hidden"
-        animate="visible"
-        variants={fadeUp}
-        transition={{ duration: 0.6 }}
-        className="text-center mb-14"
-      >
-        <Tittle text1="MY" text2="PROFILE" />
-        <p className="text-gray-500 text-sm mt-3">
-          Manage your personal information & orders
-        </p>
-      </motion.div>
+    <div className="page-top gutter pb-10">
+      <header className="pb-12 pt-8 sm:pt-14">
+        <p className="eyebrow text-mute">( Account ) — Personal information & orders</p>
+        <h1 className="display mt-5 text-[clamp(56px,10vw,160px)]">
+          <SplitText text="My *profile*" trigger="mount" accentClassName="italic text-ember" />
+        </h1>
+      </header>
 
-      {/* ================= PROFILE LAYOUT ================= */}
-      <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-10 mb-24">
+      <div className="grid gap-10 pb-16 md:grid-cols-[320px_1fr] md:gap-16">
+        <Reveal className="h-fit bg-ink p-6 text-bone">
+          <div className="flex h-20 w-20 items-center justify-center rounded-full bg-ember display text-4xl text-ink" aria-hidden="true">
+            {initials}
+          </div>
+          <p className="display mt-6 text-4xl">{name || "ELEVÉ member"}</p>
+          <p className="text-sm text-bone/60">{addr.email || "Details appear after your first order"}</p>
+          <div className="mt-8 grid gap-2">
+            <Button variant="light" full size="sm" to="/orders">View orders</Button>
+            <Button variant="outline" full size="sm" onClick={logout} icon={false}>Log out</Button>
+          </div>
+        </Reveal>
 
-        {/* ================= LEFT SIDEBAR ================= */}
-        <motion.div
-          initial={{ opacity: 0, x: -30 }}
-          whileInView={{ opacity: 1, x: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
-          className="bg-white rounded-2xl shadow-lg p-6 flex flex-col items-center text-center"
-        >
-          <img
-            src="https://i.pravatar.cc/150"
-            alt="Profile"
-            className="w-28 h-28 rounded-full object-cover mb-4"
-          />
+        <div className="space-y-12">
+          <Reveal className="grid gap-px bg-ink/10 sm:grid-cols-3" aria-busy={orders === null}>
+            {[
+              ["Total orders", list.length, (n) => String(Math.round(n))],
+              ["Delivered", delivered, (n) => String(Math.round(n))],
+              ["Total spent", spent, (n) => formatPrice(currecy, n)],
+            ].map(([t, v, fmt]) => (
+              <div key={t} className="bg-bone p-6">
+                <p className="eyebrow text-mute">{t}</p>
+                <p className="display mt-4 text-5xl sm:text-6xl">
+                  {orders === null ? <span className="skeleton inline-block h-12 w-16 align-middle" /> : <AnimatedNumber value={v} format={fmt} />}
+                </p>
+              </div>
+            ))}
+          </Reveal>
 
-          <h3 className="text-lg font-semibold tracking-wide">
-            John Doe
-          </h3>
-          <p className="text-sm text-gray-500">
-            johndoe@email.com
-          </p>
-
-          <motion.button
-            whileHover={{ scale: 1.03 }}
-            whileTap={{ scale: 0.95 }}
-            className="cursor-pointer mt-6 w-full py-3 rounded-xl bg-black text-white text-sm tracking-widest hover:bg-gray-900 transition shadow-md"
-          >
-            EDIT PROFILE
-          </motion.button>
-
-
-          <motion.button
-            whileHover={{ scale: 1.03 }}
-            whileTap={{ scale: 0.95 }}
-             className="cursor-pointer mt-6 w-full py-3 rounded-xl text-sm bg-red-500  text-white hover:underline">
-            LOGOUT
-          </motion.button>
-        </motion.div>
-
-        {/* ================= RIGHT CONTENT ================= */}
-        <div className="md:col-span-2 flex flex-col gap-10">
-
-          {/* ================= ACCOUNT DETAILS ================= */}
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-            className="bg-white rounded-2xl shadow-lg p-6"
-          >
-            <h4 className="text-sm font-semibold tracking-widest mb-6">
-              ACCOUNT DETAILS
-            </h4>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 text-sm">
-              <Info label="Full Name" value="John Doe" />
-              <Info label="Email" value="johndoe@email.com" />
-              <Info label="Phone" value="+91 98765 43210" />
-              <Info label="Member Since" value="March 2024" />
+          <Reveal>
+            <h2 className="label-ui mb-6">Latest delivery details</h2>
+            <div className="grid gap-6 sm:grid-cols-2">
+              <Info label="Name" value={name} />
+              <Info label="Email" value={addr.email} />
+              <Info label="Phone" value={addr.phone} />
+              <Info label="Address" value={[addr.Street, addr.city, addr.state, addr.zip, addr.country].filter(Boolean).join(", ")} />
             </div>
-          </motion.div>
-
-          {/* ================= ORDER SUMMARY ================= */}
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-            className="grid grid-cols-1 sm:grid-cols-3 gap-6"
-          >
-            <StatCard title="TOTAL ORDERS" value="12" />
-            <StatCard title="PENDING" value="2" />
-            <StatCard title="DELIVERED" value="10" />
-          </motion.div>
-
-          {/* ================= ADDRESS ================= */}
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-            className="bg-white rounded-2xl shadow-lg p-6"
-          >
-            <h4 className="text-sm font-semibold tracking-widest mb-4">
-              DEFAULT ADDRESS
-            </h4>
-
-            <p className="text-sm text-gray-600 leading-relaxed">
-              54709 Willms Station <br />
-              Suite 350 <br />
-              Washington, USA
-            </p>
-
-            <motion.button
-              whileHover={{ scale: 1.03 }}
-              whileTap={{ scale: 0.95 }}
-              className="cursor-pointer mt-6 px-6 py-3 rounded-xl bg-black text-white text-sm tracking-widest hover:bg-gray-900 transition shadow-md"
-            >
-              MANAGE ADDRESSES
-            </motion.button>
-          </motion.div>
-
+            {orders !== null && !latest && (
+              <p className="mt-6 text-sm text-mute">
+                No orders yet — your delivery details will show here after checkout.
+              </p>
+            )}
+          </Reveal>
         </div>
       </div>
     </div>
   );
 };
-
-/* ================= SMALL COMPONENTS ================= */
-
-const Info = ({ label, value }) => (
-  <div>
-    <p className="text-xs tracking-widest text-gray-400 mb-1">
-      {label}
-    </p>
-    <p className="text-gray-700 font-medium">
-      {value}
-    </p>
-  </div>
-);
-
-const StatCard = ({ title, value }) => (
-  <div className="bg-gray-50 border border-gray-200 rounded-2xl p-6 text-center shadow-sm">
-    <p className="text-xs tracking-widest text-gray-400 mb-2">
-      {title}
-    </p>
-    <h3 className="text-2xl font-semibold">
-      {value}
-    </h3>
-  </div>
-);
 
 export default Profile;

@@ -1,298 +1,364 @@
-import React, { useContext, useEffect, useState } from "react";
-import { ShopContext } from "../context/ShopContext";
-import { useParams, useNavigate } from "react-router-dom"; // Added useNavigate
-import assets from "../assets/assets";
-import { motion, AnimatePresence } from "framer-motion";
+import { useContext, useMemo, useRef, useState } from "react";
+import { Link, useNavigate, useParams } from "react-router-dom";
+import { AnimatePresence, LayoutGroup, motion, useReducedMotion } from "framer-motion";
+import { toast } from "react-toastify";
+import { Heart, Star, Truck, RefreshCcw, ShieldCheck } from "lucide-react";
+import { ShopContext } from "../context/shop-context";
+import { useUI } from "../context/ui-context";
 import RelatedProduct from "../components/RelatedProduct";
-import { toast } from "react-toastify"; // Assuming you have toast for alerts
+import SplitText from "../components/motion/SplitText";
+import Button from "../components/ui/Button";
+import { QtyStepper } from "../components/CartLineItem";
+import { useFinePointer } from "../hooks/useMedia";
+import { ease, formatPrice, pad } from "../lib/motion";
+import { img } from "../lib/image";
+
+const REVIEWS = [
+  { name: "Aarav", text: "Amazing quality, fits perfectly!" },
+  { name: "Riya", text: "Fabric feels premium. Totally worth it." },
+  { name: "Kabir", text: "Looks even better in real life." },
+];
+
+// Directional clip-wipe: next image wipes in from the right, previous from the left.
+const wipe = {
+  enter: (dir) => ({ clipPath: dir > 0 ? "inset(0% 0% 0% 100%)" : "inset(0% 100% 0% 0%)", scale: 1.1 }),
+  center: { clipPath: "inset(0% 0% 0% 0%)", scale: 1 },
+  exit: { opacity: 0.4, transition: { duration: 0.6 } },
+};
+
+// Main image with a hover zoom lens (desktop) and clip-wipe between images.
+// The lens position is written to CSS variables on the element — no React
+// re-render per pointer move.
+const Stage = ({ images, active, setActive, imgRef, name }) => {
+  const fine = useFinePointer();
+  const reduced = useReducedMotion();
+  const lensRef = useRef(null);
+  const [dir, setDir] = useState(1);
+  const src = images[active];
+  const canZoom = fine && !reduced;
+
+  const go = (i) => {
+    const next = (i + images.length) % images.length;
+    setDir(next >= active ? 1 : -1);
+    setActive(next);
+  };
+
+  const onMove = (e) => {
+    const lens = lensRef.current;
+    if (!canZoom || !lens) return;
+    const r = e.currentTarget.getBoundingClientRect();
+    lens.style.setProperty("--zx", `${((e.clientX - r.left) / r.width) * 100}%`);
+    lens.style.setProperty("--zy", `${((e.clientY - r.top) / r.height) * 100}%`);
+    lens.style.opacity = "1";
+  };
+  const onLeave = () => {
+    if (lensRef.current) lensRef.current.style.opacity = "0";
+  };
+
+  return (
+    <div className="flex flex-col-reverse gap-3 lg:flex-row">
+      {images.length > 1 && (
+        <div
+          className="scrollbar-hide flex gap-2 overflow-x-auto lg:w-20 lg:flex-col"
+          role="tablist"
+          aria-label="Product images"
+          onKeyDown={(e) => {
+            if (e.key === "ArrowRight" || e.key === "ArrowDown") { e.preventDefault(); go(active + 1); }
+            if (e.key === "ArrowLeft" || e.key === "ArrowUp") { e.preventDefault(); go(active - 1); }
+          }}
+        >
+          {images.map((thumb, i) => (
+            <button
+              key={i}
+              type="button"
+              role="tab"
+              aria-selected={active === i}
+              tabIndex={active === i ? 0 : -1}
+              aria-label={`Show image ${i + 1} of ${images.length}`}
+              onClick={() => go(i)}
+              className="relative aspect-[3/4] w-16 shrink-0 overflow-hidden bg-stone-2 lg:w-full"
+            >
+              <img src={img(thumb, 200)} alt="" className={`h-full w-full object-cover transition-all duration-500 ${active === i ? "opacity-100" : "opacity-50 hover:opacity-90"}`} />
+              {active === i && <motion.span layoutId="thumb-ring" className="absolute inset-0 ring-1 ring-inset ring-ink" />}
+            </button>
+          ))}
+        </div>
+      )}
+
+      <div
+        className="relative aspect-[4/5] flex-1 overflow-hidden bg-stone-2"
+        onPointerMove={onMove}
+        onPointerLeave={onLeave}
+        data-cursor={canZoom ? "Zoom" : undefined}
+      >
+        <AnimatePresence initial={false} custom={dir}>
+          <motion.img
+            ref={imgRef}
+            key={src}
+            src={img(src, 1400)}
+            alt={name}
+            fetchPriority="high"
+            custom={dir}
+            variants={wipe}
+            initial="enter"
+            animate="center"
+            exit="exit"
+            transition={{ duration: 0.9, ease: ease.inOut }}
+            className="absolute inset-0 h-full w-full object-cover"
+          />
+        </AnimatePresence>
+        {canZoom && (
+          <div
+            ref={lensRef}
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 bg-no-repeat opacity-0 transition-opacity duration-300"
+            style={{ backgroundImage: `url(${img(src, 2000)})`, backgroundSize: "200%", backgroundPosition: "var(--zx, 50%) var(--zy, 50%)" }}
+          />
+        )}
+        <span className="pointer-events-none absolute bottom-3 left-3 bg-bone/80 px-2 py-1 font-mono text-[10px] backdrop-blur">
+          {pad(active + 1)} / {pad(images.length)}
+        </span>
+      </div>
+    </div>
+  );
+};
 
 const Product = () => {
   const { productId } = useParams();
-  // Added 'token' and 'navigate' to handle auth logic
-  const { products, currency, addToCart, token } = useContext(ShopContext);
+  const { products, currency, addToCart, token, shippingCost } = useContext(ShopContext);
+  const { flyToCart } = useUI();
   const navigate = useNavigate();
+  const imgRef = useRef(null);
 
-  const [productData, setProductData] = useState(null);
-  const [activeImage, setActiveImage] = useState("");
+  const productData = useMemo(() => products.find((p) => p._id === productId) || null, [products, productId]);
+  const [activeImage, setActiveImage] = useState(0);
   const [activeSize, setActiveSize] = useState(null);
+  const [qty, setQty] = useState(1);
   const [tab, setTab] = useState("desc");
+  const [status, setStatus] = useState("idle"); // idle | adding | added
+  const [sizeError, setSizeError] = useState(false);
+  const [liked, setLiked] = useState(false);
 
-  // State for the "Fly to Cart" animation
-  const [isAnimatingCart, setIsAnimatingCart] = useState(false);
+  // Per-product UI resets naturally: routes are keyed by pathname, so a new
+  // product id remounts this page.
 
-  useEffect(() => {
-    const product = products.find((p) => p._id === productId);
-    if (product) {
-      setProductData(product);
-      setActiveImage(product.images[0]);
-    }
-  }, [productId, products]);
-
-  // --- NEW: Handle Add to Cart Logic ---
-  const handleAddToCart = () => {
-    // 1. Check if logged in
+  const handleAddToCart = async () => {
+    // 1. Must be logged in (unchanged rule)
     if (!token) {
       toast.error("Please login to add items to cart");
-      navigate("/login"); // Redirect to login page
+      navigate("/login");
       return;
     }
-
-    // 2. Check if size is selected
+    // 2. Must choose a size — shake the selector instead of only toasting
     if (!activeSize) {
+      setSizeError(true);
+      setTimeout(() => setSizeError(false), 600);
       toast.error("Please select a size");
       return;
     }
-
-    // 3. Trigger Animation
-    setIsAnimatingCart(true);
-
-    // 4. Add to cart functionality
-    addToCart(productData._id, activeSize);
-
-    // 5. Reset animation after it finishes (1 second)
-    setTimeout(() => {
-      setIsAnimatingCart(false);
-    }, 1000);
+    setStatus("adding");
+    flyToCart(productData.images[activeImage], imgRef.current);
+    await addToCart(productData._id, activeSize, qty);
+    setStatus("added");
+    setTimeout(() => setStatus("idle"), 1800);
   };
 
-  if (!productData) return null;
+  if (!productData) {
+    return (
+      <div className="page-top gutter grid gap-10 pb-20 pt-8 lg:grid-cols-2">
+        <div className="skeleton aspect-[4/5]" />
+        <div className="space-y-4 pt-6">
+          <div className="skeleton h-4 w-32" />
+          <div className="skeleton h-16 w-3/4" />
+          <div className="skeleton h-6 w-24" />
+        </div>
+      </div>
+    );
+  }
+
+  const images = productData.images?.length ? productData.images : [""];
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      className="border-t pt-10 px-4 sm:px-10 relative"
-    >
-      
-      {/* ================= ADD TO CART ANIMATION LAYER ================= */}
-      {/* This image appears only when adding to cart, flies to top-right, then vanishes */}
-      <AnimatePresence>
-        {isAnimatingCart && (
-          <motion.img
-            src={activeImage}
-            initial={{ 
-              opacity: 1, 
-              position: "fixed", 
-              top: "50%", 
-              left: "50%", 
-              width: "200px", 
-              height: "200px", 
-              zIndex: 9999,
-              x: "-50%",
-              y: "-50%" 
-            }}
-            animate={{ 
-              top: "5%",       // Moves to top of viewport
-              left: "95%",     // Moves to right of viewport (Cart location)
-              width: "20px",   // Shrinks
-              height: "20px", 
-              opacity: 0,      // Fades out
-              borderRadius: "50%"
-            }}
-            transition={{ duration: 0.8, ease: "easeInOut" }}
-            className="object-cover shadow-2xl pointer-events-none border-2 border-white"
-          />
-        )}
-      </AnimatePresence>
-      {/* =============================================================== */}
+    <div className="page-top">
+      <div className="gutter grid gap-10 pb-20 pt-6 lg:grid-cols-[1.15fr_1fr] lg:gap-16">
+        {/* ============ GALLERY ============ */}
+        <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 1, ease: ease.out }}>
+          <Stage images={images} active={activeImage} setActive={setActiveImage} imgRef={imgRef} name={productData.name} />
+        </motion.div>
 
-      <div className="flex flex-col lg:flex-row gap-14">
-        {/* ================= LEFT : IMAGES ================= */}
-        <div className="flex-1 flex flex-col-reverse sm:flex-row gap-4">
-          {/* Thumbnails */}
-          <div className="flex sm:flex-col gap-3 sm:w-[90px] overflow-x-auto sm:overflow-y-auto scrollbar-hide">
-            {productData.images.map((img, idx) => (
-              <motion.img
-                key={idx}
-                src={img}
-                alt=""
-                onClick={() => setActiveImage(img)}
-                whileHover={{ scale: 1.08 }}
-                className="w-16 h-16 sm:w-full sm:h-auto flex-shrink-0 object-cover rounded-lg cursor-pointer border transition opacity-70 hover:opacity-100"
-                style={{
-                  borderColor: activeImage === img ? "black" : "transparent",
-                }}
-              />
-            ))}
-          </div>
+        {/* ============ PURCHASE PANEL ============ */}
+        <div>
+          <div className="lg:sticky lg:top-[calc(var(--nav-h)+16px)]">
+            <nav aria-label="Breadcrumb" className="eyebrow flex flex-wrap gap-2 text-mute">
+              <Link to="/collection" className="link-line hover:text-ink">Shop</Link>/
+              <Link to={`/collection?category=${productData.category}`} className="link-line hover:text-ink">{productData.category}</Link>/
+              <span className="text-ink">{productData.subcategory || productData.subCategory}</span>
+            </nav>
 
-          {/* Main Image */}
-          <div className="flex-1 bg-gray-50 rounded-2xl overflow-hidden aspect-square max-h-[565px]">
-            <AnimatePresence mode="wait">
-              <motion.img
-                key={activeImage}
-                src={activeImage}
-                initial={{ opacity: 0, scale: 1.05 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.4 }}
-                className="w-full h-full object-cover"
-              />
-            </AnimatePresence>
-          </div>
-        </div>
+            <h1 className="display mt-5 text-[clamp(40px,5vw,76px)] leading-[0.95]">
+              <SplitText text={productData.name} trigger="mount" stagger={0.04} key={productData._id} />
+            </h1>
 
-        {/* ================= RIGHT : INFO ================= */}
-        <motion.div
-          initial={{ opacity: 0, y: 40 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="flex-1"
-        >
-          <h1 className="text-3xl font-semibold">{productData.name}</h1>
+            <div className="mt-5 flex items-center gap-5">
+              <motion.p
+                key={productData._id}
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.4, duration: 0.8, ease: ease.out }}
+                className="font-mono text-2xl"
+              >
+                {formatPrice(currency, productData.price)}
+              </motion.p>
+              <div className="flex items-center gap-1.5 text-sm text-mute" aria-label="Rated 4 out of 5, 122 reviews">
+                {[0, 1, 2, 3, 4].map((i) => (
+                  <Star key={i} size={13} className={i < 4 ? "fill-ink text-ink" : "text-ink/30"} />
+                ))}
+                <span className="ml-1">(122)</span>
+              </div>
+            </div>
 
-          {/* Rating */}
-          <div className="flex items-center gap-1 mt-3">
-            {[1, 2, 3, 4].map((i) => (
-              <img key={i} src={assets.star_icon} className="w-4" alt="" />
-            ))}
-            <img src={assets.star_dull_icon} className="w-4" alt="" />
-            <span className="text-sm text-gray-500 ml-2">(122 reviews)</span>
-          </div>
+            <p className="mt-6 max-w-lg text-[15px] leading-relaxed text-mute">{productData.description}</p>
 
-          {/* Price */}
-          <p className="mt-6 text-3xl font-semibold">
-            {currency} {productData.price}
-          </p>
-
-          {/* Description */}
-          <p className="mt-6 text-gray-600 leading-relaxed max-w-xl">
-            {productData.description}
-          </p>
-
-          {/* Sizes */}
-          <div className="mt-8">
-            <p className="font-medium mb-3">Select Size</p>
-            <div className="flex gap-3">
-              {productData.sizes.map((size) => (
-                <button
-                  key={size}
-                  onClick={() => setActiveSize(size)}
-                  className={`px-4 py-2 rounded-lg border transition cursor-pointer
-                    ${
-                      activeSize === size
-                        ? "bg-black text-white border-black"
-                        : "border-gray-300 hover:border-black"
-                    }`}
+            {/* Sizes */}
+            <div className="mt-9">
+              <div className="flex items-center justify-between">
+                <p className="label-ui" id="size-label">
+                  Size {activeSize && <span className="ml-2 font-mono text-mute">— {activeSize}</span>}
+                </p>
+                <AnimatePresence>
+                  {sizeError && (
+                    <motion.p initial={{ opacity: 0, x: 8 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }} className="text-xs text-ember" role="alert">
+                      Choose a size first
+                    </motion.p>
+                  )}
+                </AnimatePresence>
+              </div>
+              <LayoutGroup id="sizes">
+                <motion.div
+                  role="radiogroup"
+                  aria-labelledby="size-label"
+                  animate={sizeError ? { x: [0, -10, 9, -6, 4, 0] } : { x: 0 }}
+                  transition={{ duration: 0.5 }}
+                  className="mt-3 flex flex-wrap gap-2"
                 >
-                  {size}
-                </button>
+                  {productData.sizes.map((size) => {
+                    const on = activeSize === size;
+                    return (
+                      <button
+                        key={size}
+                        type="button"
+                        role="radio"
+                        aria-checked={on}
+                        onClick={() => setActiveSize(size)}
+                        className={`relative h-12 min-w-14 px-4 font-mono text-sm transition-colors duration-300 ${on ? "text-bone" : `border ${sizeError ? "border-ember" : "border-ink/20"} hover:border-ink`}`}
+                      >
+                        {on && <motion.span layoutId="size-pill" className="absolute inset-0 bg-ink" transition={{ type: "spring", stiffness: 500, damping: 36 }} />}
+                        <span className="relative">{size}</span>
+                      </button>
+                    );
+                  })}
+                </motion.div>
+              </LayoutGroup>
+            </div>
+
+            {/* Quantity + CTA */}
+            <div className="mt-8 flex items-center gap-2 sm:gap-3">
+              <QtyStepper value={qty} onChange={setQty} />
+              <div className="min-w-0 flex-1">
+                <Button full size="lg" onClick={handleAddToCart} loading={status === "adding"} success={status === "added"} icon={false}>
+                  {!token ? "Login to buy" : status === "added" ? "Added to bag" : <>Add to bag<span className="hidden sm:inline"> — {formatPrice(currency, productData.price * qty)}</span></>}
+                </Button>
+              </div>
+              <motion.button
+                type="button"
+                whileTap={{ scale: 0.85 }}
+                onClick={() => setLiked(!liked)}
+                aria-pressed={liked}
+                aria-label={liked ? "Remove from wishlist" : "Add to wishlist"}
+                className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full border border-ink/20 transition-colors hover:border-ink"
+              >
+                <motion.span key={String(liked)} initial={{ scale: liked ? 0.4 : 1 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 500, damping: 12 }}>
+                  <Heart size={18} className={liked ? "fill-ember text-ember" : ""} />
+                </motion.span>
+              </motion.button>
+            </div>
+
+            {/* Trust */}
+            <ul className="mt-10 grid gap-3 border-t border-ink/10 pt-6 text-sm text-mute sm:grid-cols-3">
+              {[
+                [Truck, `Flat ${formatPrice(currency, shippingCost)} shipping`],
+                [RefreshCcw, "Easy 7-day return"],
+                [ShieldCheck, "Secure payments"],
+              ].map(([Icon, t]) => (
+                <li key={t} className="flex items-center gap-2">
+                  <Icon size={15} strokeWidth={1.5} className="text-ink" /> {t}
+                </li>
               ))}
+            </ul>
+
+            {/* Tabs */}
+            <div className="mt-10">
+              <LayoutGroup id="tabs">
+                <div className="flex gap-6 border-b border-ink/10" role="tablist">
+                  {[
+                    ["desc", "Description"],
+                    ["reviews", `Reviews (${REVIEWS.length})`],
+                  ].map(([k, label]) => (
+                    <button
+                      key={k}
+                      type="button"
+                      role="tab"
+                      aria-selected={tab === k}
+                      onClick={() => setTab(k)}
+                      className={`relative pb-3 label-ui transition-colors ${tab === k ? "text-ink" : "text-mute hover:text-ink"}`}
+                    >
+                      {label}
+                      {tab === k && <motion.span layoutId="tab-line" className="absolute inset-x-0 -bottom-px h-px bg-ink" />}
+                    </button>
+                  ))}
+                </div>
+              </LayoutGroup>
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={tab}
+                  role="tabpanel"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -6 }}
+                  transition={{ duration: 0.35, ease: ease.out }}
+                  className="pt-5"
+                >
+                  {tab === "desc" ? (
+                    <p className="max-w-lg text-[15px] leading-relaxed text-mute">
+                      {productData.description ||
+                        "Crafted with premium materials and designed for everyday comfort. This piece blends modern aesthetics with durability, making it a perfect addition to your wardrobe."}
+                    </p>
+                  ) : (
+                    <ul className="divide-y divide-ink/10">
+                      {REVIEWS.map((r) => (
+                        <li key={r.name} className="py-4">
+                          <div className="flex items-center justify-between">
+                            <p className="font-medium">{r.name}</p>
+                            <div className="flex gap-0.5" aria-label="4 out of 5 stars">
+                              {[0, 1, 2, 3, 4].map((i) => (
+                                <Star key={i} size={11} className={i < 4 ? "fill-ink text-ink" : "text-ink/30"} />
+                              ))}
+                            </div>
+                          </div>
+                          <p className="mt-1 text-sm text-mute">{r.text}</p>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </motion.div>
+              </AnimatePresence>
             </div>
           </div>
-
-          {/* CTA Buttons - UPDATED */}
-          <div className="mt-10 flex gap-4">
-            <button
-              onClick={handleAddToCart} // Changed from inline function to handler
-              className="flex-1 py-3 rounded-xl bg-black text-white cursor-pointer hover:opacity-90 transition active:scale-95"
-            >
-              {token ? "ADD TO CART" : "LOGIN TO BUY"} 
-            </button>
-
-            <button className="w-12 h-12 rounded-xl border flex items-center justify-center cursor-pointer hover:bg-gray-100 transition">
-              ♡
-            </button>
-          </div>
-
-          {/* Trust Badges */}
-          <div className="mt-8 text-sm text-gray-500 space-y-1">
-            <p>✔ Free shipping on orders above $99</p>
-            <p>✔ Easy 7-day return</p>
-            <p>✔ Secure payments</p>
-          </div>
-        </motion.div>
-      </div>
-
-      {/* ================= DESCRIPTION & REVIEWS ================= */}
-      <div className="mt-14 border-t pt-8">
-        {/* Tabs */}
-        <div className="flex gap-8 text-sm font-medium border-b pb-3">
-          <button
-            onClick={() => setTab("desc")}
-            className={`relative pb-2 transition cursor-pointer ${
-              tab === "desc" ? "text-black" : "text-gray-400 hover:text-black"
-            }`}
-          >
-            Description
-            {tab === "desc" && (
-              <span className="absolute left-0 -bottom-[13px] w-full h-[2px] bg-black" />
-            )}
-          </button>
-
-          <button
-            onClick={() => setTab("reviews")}
-            className={`relative pb-2 transition cursor-pointer ${
-              tab === "reviews" ? "text-black" : "text-gray-400 hover:text-black"
-            }`}
-          >
-            Reviews (3)
-            {tab === "reviews" && (
-              <span className="absolute left-0 -bottom-[13px] w-full h-[2px] bg-black" />
-            )}
-          </button>
         </div>
-
-        {/* Content */}
-        <AnimatePresence mode="wait">
-          {tab === "desc" && (
-            <motion.div
-              key="desc"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.3 }}
-              className="mt-6 text-gray-600 max-w-2xl leading-relaxed"
-            >
-              {productData.description ||
-                "Crafted with premium materials and designed for everyday comfort. This piece blends modern aesthetics with durability, making it a perfect addition to your wardrobe."}
-            </motion.div>
-          )}
-
-          {tab === "reviews" && (
-            <motion.div
-              key="reviews"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.3 }}
-              className="mt-6 space-y-5 max-w-2xl"
-            >
-              {[
-                { name: "Aarav", text: "Amazing quality, fits perfectly!" },
-                { name: "Riya", text: "Fabric feels premium. Totally worth it." },
-                { name: "Kabir", text: "Looks even better in real life." },
-              ].map((review, idx) => (
-                <div key={idx} className="border rounded-xl p-4 bg-gray-50">
-                  <div className="flex items-center justify-between mb-2">
-                    <p className="font-medium">{review.name}</p>
-                    <div className="flex gap-1">
-                      {[1, 2, 3, 4].map((i) => (
-                        <img
-                          key={i}
-                          src={assets.star_icon}
-                          className="w-3"
-                          alt=""
-                        />
-                      ))}
-                      <img src={assets.star_dull_icon} className="w-3" alt="" />
-                    </div>
-                  </div>
-                  <p className="text-sm text-gray-600">{review.text}</p>
-                </div>
-              ))}
-            </motion.div>
-          )}
-        </AnimatePresence>
       </div>
 
-      {/* Display related Product */}
-      <RelatedProduct
-        category={productData.category}
-        subCategory={productData.subCategory}
-        currentId={productData._id}
-      />
-    </motion.div>
+      <RelatedProduct category={productData.category} subCategory={productData.subcategory || productData.subCategory} currentId={productData._id} />
+    </div>
   );
 };
 

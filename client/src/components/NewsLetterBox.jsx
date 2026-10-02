@@ -1,34 +1,70 @@
-import React from 'react'
+import { useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import { ArrowRight, Check } from "lucide-react";
+import SplitText from "./motion/SplitText";
+import { ease } from "../lib/motion";
 
+// Newsletter. There is no subscribe API, so nothing is sent: the confirmation
+// says so plainly instead of claiming an email is on its way.
 const NewsLetterBox = () => {
-    const onSubmitHandler = (e) => {
-        e.preventDefault();
-        // Handle form submission logic here
-    }
+  const [email, setEmail] = useState("");
+  const [done, setDone] = useState(false);
 
-    return (
-        <div className=' text-center my-20 px-4'>
-            <p className='text-2xl font-medium text-gray-800'>Subscribe now & get 20% off</p>
-            <p className=' text-gray-400 mt-3'>
-                Lorem Ipsum is simply dummy text of the printing and typesetting industry.
-            </p>
-            <form onSubmit={onSubmitHandler} className='mt-8 sm:w-1/2 flex items-center gap-4 max-w-md mx-auto pl-4 border-1 border-gray-300 rounded-full shadow-lg'>
-                <input className='w-full sm:flex-1 outline-none' type="email" placeholder='Enter your email' required />
-                <button
-                    type="submit"
-                    className=" cursor-pointer
-                                bg-[#414141] text-white px-6 py-3
-                                rounded-l-none rounded-r-full
-                                text-sm font-medium tracking-wide
-                                hover:bg-black transition-all duration-300
-                                active:scale-95 shadow-lg"
+  const onSubmitHandler = (e) => {
+    e.preventDefault();
+    setDone(true);
+  };
+
+  return (
+    <section className="gutter py-24 sm:py-32" aria-labelledby="newsletter-title">
+      <div className="grid gap-10 lg:grid-cols-[1.2fr_1fr] lg:items-end">
+        <div>
+          <p className="eyebrow text-mute">The inner circle</p>
+          <h2 id="newsletter-title" className="display mt-5 text-[clamp(44px,6vw,100px)]">
+            <SplitText text="Get *20% off* your first order" accentClassName="italic text-ember" />
+          </h2>
+        </div>
+        <div>
+          <p className="max-w-sm text-[15px] leading-relaxed text-mute">
+            Early access to drops, restocks before they go public, and nothing you’ll want to unsubscribe from.
+          </p>
+          <form onSubmit={onSubmitHandler} className="mt-8">
+            <AnimatePresence mode="wait" initial={false}>
+              {done ? (
+                <motion.p
+                  key="ok"
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, ease: ease.out }}
+                  className="flex items-center gap-3 border-b border-ink pb-4 text-lg"
+                  role="status"
                 >
-                    SUBSCRIBE
-                </button>
+                  <span className="flex h-8 w-8 items-center justify-center rounded-full bg-ember text-ink"><Check size={16} /></span>
+                  Thanks! Sign-ups aren’t connected yet in this demo.
+                </motion.p>
+              ) : (
+                <motion.div key="form" exit={{ opacity: 0, y: -12 }} className="group relative flex items-center border-b border-ink/30 transition-colors focus-within:border-ink">
+                  <label htmlFor="nl-email" className="sr-only">Email address</label>
+                  <input
+                    id="nl-email"
+                    type="email"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="your@email.com"
+                    className="w-full bg-transparent py-4 text-lg outline-none placeholder:text-ink/30"
+                  />
+                  <button type="submit" aria-label="Subscribe" className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-ink text-bone transition-all duration-500 hover:bg-ember hover:text-ink group-focus-within:rotate-[-45deg]">
+                    <ArrowRight size={18} />
+                  </button>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </form>
+        </div>
+      </div>
+    </section>
+  );
+};
 
-
-            </form>
-        </div>)
-}
-
-export default NewsLetterBox
+export default NewsLetterBox;

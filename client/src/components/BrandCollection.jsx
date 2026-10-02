@@ -1,107 +1,36 @@
-import { motion } from 'framer-motion';
-import { Link } from 'react-router-dom';
-import assets from '../assets/assets';
-import Tittle from './Tittle';
+import { Link } from "react-router-dom";
+import assets from "../assets/assets";
+import Tittle from "./Tittle";
+import Reveal from "./motion/Reveal";
 
+const brands = [
+  { id: "H&M", name: "H&M", image: assets.handm },
+  { id: "Adidas", name: "Adidas", image: assets.adiddas },
+  { id: "calvin-klein", name: "Calvin Klein", image: assets.calvin },
+  { id: "lacoste", name: "Lacoste", image: assets.lacoste },
+  { id: "gucci", name: "Gucci", image: assets.gucci },
+  { id: "nike", name: "Nike", image: assets.nike },
+];
 
-const BrandCollection = () => {
+// Brand index: hairline grid, logo desaturated until hover, spotlight fill.
+const BrandCollection = () => (
+  <section className="gutter pt-28" aria-labelledby="brands-title">
+    <div className="mb-10 flex flex-col justify-between gap-6 sm:flex-row sm:items-end">
+      <Tittle text1="TOP" text2="BRANDS" eyebrow="( Index ) — Houses we carry" />
+      <p className="max-w-xs text-[15px] leading-relaxed text-mute">A diverse range of styles and quality craftsmanship from the names you trust.</p>
+    </div>
+    <ul className="grid grid-cols-2 border-l border-t border-ink/10 sm:grid-cols-3 lg:grid-cols-6">
+      {brands.map((b, i) => (
+        <Reveal as="li" key={b.id} variant="fade" delay={i * 0.06} className="border-b border-r border-ink/10">
+          <Link to={`/collection/${encodeURIComponent(b.id)}`} data-cursor="Open" className="group relative flex aspect-square flex-col items-center justify-center overflow-hidden p-6">
+            <span className="absolute inset-0 origin-bottom scale-y-0 bg-paper transition-transform duration-700 ease-[var(--ease-out-expo)] group-hover:scale-y-100" />
+            <img src={b.image} alt="" loading="lazy" className="relative max-h-16 w-auto object-contain opacity-70 grayscale transition-all duration-500 group-hover:scale-110 group-hover:opacity-100 group-hover:grayscale-0" />
+            <span className="relative mt-4 eyebrow text-mute transition-colors group-hover:text-ink">{b.name}</span>
+          </Link>
+        </Reveal>
+      ))}
+    </ul>
+  </section>
+);
 
-
-    const merchandiseCollections = [
-            {
-                id: 'H&M',
-                name: 'H&M ',
-                image: assets.handm,
-            },
-            {
-                id: 'Adidas',
-                name: 'ADIDAS ',
-                image: assets.adiddas,
-            },
-            
-            {
-                id: 'calvin-klein',
-                name: 'CALVIN KLEIN',
-                image: assets.calvin,
-            },
-            {
-                id: 'lacoste',
-                name: 'LACOSTE ',
-                image: assets.lacoste,
-            },
-            {
-                id: 'gucci',
-                name: 'GUCCI ',
-                image: assets.gucci,
-            },
-            {
-                id: 'nike',
-                name: 'NIKE ',
-                image: assets.nike,
-            },
-        ];
-
-
-  return (
-        <div className="mt-16 overflow-hidden">
-            <div className="text-center max-w-3xl mx-auto mb-14 px-4">
-                <Tittle text1={"TOP"} text2={"BRANDS"} />
-                <p className="mt-4 text-sm sm:text-base text-gray-500 leading-relaxed">
-                    Get to know our Top Brands — offering a diverse range of styles, quality craftsmanship,
-                    and timeless designs that cater to every fashion enthusiast.
-                </p>
-            </div>
-
-            {/* MARQUEE WRAPPER */}
-            <div className="relative w-full overflow-hidden pt-12 pb-8">
-                <motion.div
-                    className="flex gap-6 w-max"
-                    animate={{ x: [-1000, 0] }}
-                    transition={{
-                        repeat: Infinity,
-                        repeatType: 'loop',
-                        duration: 25,
-                        ease: 'linear',
-                    }}
-                >
-                    {/* DUPLICATE LIST FOR SEAMLESS LOOP */}
-                    {[...merchandiseCollections, ...merchandiseCollections].map(
-                        (item, index) => (
-                            <motion.div
-                                key={`${item.id}-${index}`}
-                                whileHover={{ y: -6 }}
-                                className="group flex-shrink-0 w-[140px] sm:w-[180px] md:w-[220px]"
-                                
-
-                            >
-                                <Link
-                                    to={`/collection/${item.id}`}
-                                    className="block rounded-2xl overflow-hidden bg-white shadow-sm hover:shadow-xl transition-shadow duration-300"
-                                >
-                                    {/* SMALLER IMAGE */}
-                                    <div className="relative w-full aspect-[4/4] overflow-hidden rounded-xl bg-gray-50">
-                                        <img
-                                            src={item.image}
-                                            alt={item.name}
-                                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                                        />
-                                        <div className="absolute inset-0 bg-black/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                                    </div>
-
-                                    {/* TEXT */}
-                                    <div className="p-3 text-center">
-                                        <h3 className="text-sm font-semibold text-gray-600">
-                                            {item.name}
-                                        </h3>
-                                    </div>
-                                </Link>
-                            </motion.div>
-                        )
-                    )}
-                </motion.div>
-            </div>
-        </div>
-    );
-}
-
-export default BrandCollection
+export default BrandCollection;
