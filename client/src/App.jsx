@@ -14,6 +14,7 @@ import Cursor from "./components/motion/Cursor.jsx";
 import PageTransition from "./components/motion/PageTransition.jsx";
 import Home from "./pages/Home.jsx";
 import { scrollToTop } from "./lib/lenis";
+import { useMediaQuery } from "./hooks/useMedia";
 
 // Home is eager (first paint); everything else is code-split.
 const Collection = lazy(() => import("./pages/Collection.jsx"));
@@ -31,6 +32,9 @@ const PageFallback = () => <div className="min-h-[100svh]" aria-busy="true" />;
 
 const App = () => {
   const location = useLocation();
+  // Toasts must never cover actions: phones get them at the top (below the
+  // floating nav) because the sticky buy bar and drawer CTAs live at the bottom.
+  const phone = useMediaQuery("(max-width: 640px)");
 
   return (
     <>
@@ -39,7 +43,7 @@ const App = () => {
       </a>
       <SmoothScroll />
       <Cursor />
-      <ToastContainer position="bottom-left" hideProgressBar theme="dark" />
+      <ToastContainer position={phone ? "top-center" : "bottom-left"} hideProgressBar theme="dark" />
 
       <Navbar />
       <MobileMenu />

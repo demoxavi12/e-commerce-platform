@@ -1,8 +1,8 @@
-import { useContext, useMemo, useRef, useState } from "react";
+import { useContext, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { AnimatePresence, LayoutGroup, motion, useReducedMotion } from "framer-motion";
 import { toast } from "react-toastify";
-import { Heart, Star, Truck, RefreshCcw, ShieldCheck } from "lucide-react";
+import { Heart, Star, Truck, RefreshCcw, ShieldCheck, ChevronLeft, ChevronRight } from "lucide-react";
 import { ShopContext } from "../context/shop-context";
 import { useUI } from "../context/ui-context";
 import RelatedProduct from "../components/RelatedProduct";
@@ -115,11 +115,55 @@ const Stage = ({ images, active, setActive, imgRef, name }) => {
             style={{ backgroundImage: `url(${img(src, 2000)})`, backgroundSize: "200%", backgroundPosition: "var(--zx, 50%) var(--zy, 50%)" }}
           />
         )}
-        <span className="pointer-events-none absolute bottom-3 left-3 bg-bone/80 px-2 py-1 font-mono text-[10px] backdrop-blur">
+        {images.length > 1 && (
+          <div className="absolute bottom-3 right-3 z-10 flex gap-1.5">
+            <button type="button" onClick={() => go(active - 1)} aria-label="Previous image" className="glass-chip flex h-10 w-10 items-center justify-center rounded-full transition-transform hover:scale-105 active:scale-95">
+              <ChevronLeft size={18} />
+            </button>
+            <button type="button" onClick={() => go(active + 1)} aria-label="Next image" className="glass-chip flex h-10 w-10 items-center justify-center rounded-full transition-transform hover:scale-105 active:scale-95">
+              <ChevronRight size={18} />
+            </button>
+          </div>
+        )}
+        <span className="glass-chip pointer-events-none absolute bottom-3 left-3 rounded-full px-3 py-1.5 font-mono text-[10px]" aria-live="polite">
           {pad(active + 1)} / {pad(images.length)}
         </span>
       </div>
     </div>
+  );
+};
+
+// Phone-only floating glass purchase bar, shown while the main Add-to-bag
+// row is off-screen. It calls the page handler, so login/size rules,
+// fly-to-cart and the cart API are unchanged.
+const StickyBuyBar = ({ show, product, image, currency, token, activeSize, status, onBuy }) => {
+  const thumbRef = useRef(null);
+  const label = !token ? "Login to buy" : status === "added" ? "Added" : !activeSize ? "Select size" : "Add to bag";
+  return (
+    <AnimatePresence>
+      {show && (
+        <motion.div
+          initial={{ y: "130%" }}
+          animate={{ y: 0 }}
+          exit={{ y: "130%" }}
+          transition={{ duration: 0.55, ease: ease.out }}
+          className="glass fixed inset-x-2.5 bottom-[max(10px,env(safe-area-inset-bottom))] z-[50] flex items-center gap-3 rounded-[22px] p-2 lg:hidden"
+        >
+          <div ref={thumbRef} className="h-14 w-11 shrink-0 overflow-hidden rounded-[12px] bg-stone-2">
+            <img src={img(image, 160)} alt="" className="h-full w-full object-cover" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-[13px]">{product.name}</p>
+            <p className="font-mono text-xs text-mute">
+              {formatPrice(currency, product.price)}{activeSize ? ` · ${activeSize}` : ""}
+            </p>
+          </div>
+          <Button size="sm" onClick={() => onBuy(thumbRef.current)} loading={status === "adding"} success={status === "added"} icon={false}>
+            {label}
+          </Button>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 };
 
@@ -129,6 +173,8 @@ const Product = () => {
   const { flyToCart } = useUI();
   const navigate = useNavigate();
   const imgRef = useRef(null);
+  const ctaRef = useRef(null);
+  const [ctaInView, setCtaInView] = useState(true);
 
   const productData = useMemo(() => products.find((p) => p._id === productId) || null, [products, productId]);
   const [activeImage, setActiveImage] = useState(0);
@@ -142,7 +188,17 @@ const Product = () => {
   // Per-product UI resets naturally: routes are keyed by pathname, so a new
   // product id remounts this page.
 
-  const handleAddToCart = async () => {
+  // Observe the main CTA row once it exists (the page renders a skeleton
+  // until products load, so this re-runs when productData arrives).
+  useEffect(() => {
+    const el = ctaRef.current;
+    if (!el) return undefined;
+    const io = new IntersectionObserver(([entry]) => setCtaInView(entry.isIntersecting));
+    io.observe(el);
+    return () => io.disconnect();
+  }, [productData]);
+
+  const handleAddToCart = async (fromEl) => {
     // 1. Must be logged in (unchanged rule)
     if (!token) {
       toast.error("Please login to add items to cart");
@@ -157,7 +213,7 @@ const Product = () => {
       return;
     }
     setStatus("adding");
-    flyToCart(productData.images[activeImage], imgRef.current);
+    flyToCart(productData.images[activeImage], fromEl instanceof Element ? fromEl : imgRef.current);
     await addToCart(productData._id, activeSize, qty);
     setStatus("added");
     setTimeout(() => setStatus("idle"), 1800);
@@ -219,8 +275,10 @@ const Product = () => {
 
             <p className="mt-6 max-w-lg text-[15px] leading-relaxed text-mute">{productData.description}</p>
 
+            {/* Purchase card (glass) */}
+            <div className="glass mt-9 rounded-[24px] p-4 sm:p-5">
             {/* Sizes */}
-            <div className="mt-9">
+            <div>
               <div className="flex items-center justify-between">
                 <p className="label-ui" id="size-label">
                   Size {activeSize && <span className="ml-2 font-mono text-mute">— {activeSize}</span>}
@@ -250,9 +308,9 @@ const Product = () => {
                         role="radio"
                         aria-checked={on}
                         onClick={() => setActiveSize(size)}
-                        className={`relative h-12 min-w-14 px-4 font-mono text-sm transition-colors duration-300 ${on ? "text-bone" : `border ${sizeError ? "border-ember" : "border-ink/20"} hover:border-ink`}`}
+                        className={`relative h-12 min-w-14 rounded-full px-4 font-mono text-sm transition-colors duration-300 ${on ? "text-bone" : `border bg-white/40 ${sizeError ? "border-ember" : "border-ink/20"} hover:border-ink`}`}
                       >
-                        {on && <motion.span layoutId="size-pill" className="absolute inset-0 bg-ink" transition={{ type: "spring", stiffness: 500, damping: 36 }} />}
+                        {on && <motion.span layoutId="size-pill" className="absolute inset-0 rounded-full bg-ink" transition={{ type: "spring", stiffness: 500, damping: 36 }} />}
                         <span className="relative">{size}</span>
                       </button>
                     );
@@ -262,7 +320,7 @@ const Product = () => {
             </div>
 
             {/* Quantity + CTA */}
-            <div className="mt-8 flex items-center gap-2 sm:gap-3">
+            <div ref={ctaRef} className="mt-6 flex items-center gap-2 sm:gap-3">
               <QtyStepper value={qty} onChange={setQty} />
               <div className="min-w-0 flex-1">
                 <Button full size="lg" onClick={handleAddToCart} loading={status === "adding"} success={status === "added"} icon={false}>
@@ -275,12 +333,13 @@ const Product = () => {
                 onClick={() => setLiked(!liked)}
                 aria-pressed={liked}
                 aria-label={liked ? "Remove from wishlist" : "Add to wishlist"}
-                className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full border border-ink/20 transition-colors hover:border-ink"
+                className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full border border-ink/20 bg-white/40 transition-colors hover:border-ink"
               >
                 <motion.span key={String(liked)} initial={{ scale: liked ? 0.4 : 1 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 500, damping: 12 }}>
                   <Heart size={18} className={liked ? "fill-ember text-ember" : ""} />
                 </motion.span>
               </motion.button>
+            </div>
             </div>
 
             {/* Trust */}
@@ -356,6 +415,25 @@ const Product = () => {
           </div>
         </div>
       </div>
+
+      <StickyBuyBar
+        show={!ctaInView}
+        product={productData}
+        image={images[activeImage]}
+        currency={currency}
+        token={token}
+        activeSize={activeSize}
+        status={status}
+        onBuy={(el) => {
+          if (token && !activeSize) {
+            document.getElementById("size-label")?.scrollIntoView({ behavior: "smooth", block: "center" });
+            setSizeError(true);
+            setTimeout(() => setSizeError(false), 900);
+            return;
+          }
+          handleAddToCart(el);
+        }}
+      />
 
       <RelatedProduct category={productData.category} subCategory={productData.subcategory || productData.subCategory} currentId={productData._id} />
     </div>

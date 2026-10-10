@@ -43,13 +43,17 @@ const Ring = ({ items, currency }) => {
     <section ref={ref} className="relative h-[280vh] bg-ink text-bone" aria-labelledby="best-title">
       <div className="sticky top-0 flex h-screen flex-col overflow-hidden">
         <div className="gutter flex items-start justify-between pt-[calc(var(--nav-h)+24px)]">
-          <p className="eyebrow text-bone/50">( 04 ) — Most wanted</p>
+          <p className="eyebrow text-bone/50">( 05 ) — Most wanted</p>
           <p className="eyebrow hidden text-bone/50 sm:block">Scroll or drag to spin</p>
         </div>
 
         <h2 id="best-title" className="display pointer-events-none absolute inset-x-0 top-1/2 -translate-y-[60%] select-none text-center text-[clamp(80px,15vw,260px)] leading-none text-bone/[0.07]">
           Best<span className="italic">sellers</span>
         </h2>
+
+        {/* Stage lighting: warm spotlight + floor shadow give the ring a set */}
+        <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-[radial-gradient(48%_42%_at_50%_46%,rgb(216_196_160/0.16),transparent_70%)]" />
+        <div aria-hidden="true" className="pointer-events-none absolute bottom-[19%] left-1/2 h-16 w-[46%] -translate-x-1/2 rounded-[50%] bg-black/70 blur-2xl" />
 
         <motion.div
           className="relative flex flex-1 cursor-grab items-center justify-center active:cursor-grabbing"
@@ -65,7 +69,7 @@ const Ring = ({ items, currency }) => {
         </motion.div>
 
         <div className="gutter flex items-end justify-between gap-6 pb-10">
-          <div className="min-h-[72px]" aria-live="polite">
+          <div className="glass-dark min-h-[96px] min-w-[280px] max-w-md rounded-[22px] px-5 py-4" aria-live="polite">
             <AnimatePresence mode="wait">
               <motion.div
                 key={current?._id}
@@ -103,7 +107,7 @@ const RingCard = ({ p, i, step, radius, rotation }) => {
       style={{ transform: `rotateY(${angle}deg) translateZ(${radius}px)`, opacity }}
     >
       <Link to={`/product/${p._id}`} draggable={false} className="group block h-full w-full" data-cursor="View" aria-label={p.name}>
-        <motion.div className="h-full w-full overflow-hidden bg-stone-2" style={{ filter }}>
+        <motion.div className="h-full w-full overflow-hidden rounded-[14px] bg-stone-2 shadow-[0_30px_60px_-25px_rgb(0_0_0/0.8)] ring-1 ring-inset ring-white/15" style={{ filter }}>
           <img src={img(p.images?.[0], 500)} alt="" loading="lazy" draggable={false} className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105" />
         </motion.div>
       </Link>
@@ -117,10 +121,9 @@ const BestSeller = () => {
   const reduced = useReducedMotion();
 
   const bestSeller = useMemo(() => {
-    const best = products.filter((item) => item.bestseller);
-    // Ring needs ≥6 to read as a ring — top up with latest pieces if needed.
-    const fill = products.filter((p) => !p.bestseller).slice(0, Math.max(0, 6 - best.length));
-    return [...best, ...fill].slice(0, 10);
+    // Only products the API flags as bestsellers (no padding with other items,
+    // so the "bestsellers" label stays true). Fewer than 5 → rail instead of ring.
+    return products.filter((item) => item.bestseller).slice(0, 10);
   }, [products]);
 
   if (!bestSeller.length) return null;
@@ -131,7 +134,7 @@ const BestSeller = () => {
     <section className="bg-ink py-24 text-bone" aria-labelledby="best-title-m">
       <div className="gutter mb-10 flex items-end justify-between gap-6">
         <div>
-          <p className="eyebrow text-bone/50">( 04 ) — Most wanted</p>
+          <p className="eyebrow text-bone/50">( 05 ) — Most wanted</p>
           <h2 id="best-title-m" className="display mt-5 text-[clamp(48px,12vw,96px)]">
             <SplitText text="Best *sellers*" accentClassName="italic text-ember" />
           </h2>
@@ -140,7 +143,7 @@ const BestSeller = () => {
       <Rail label="Bestsellers" className="[&_h3]:text-bone [&_p]:!text-bone/70">
         {bestSeller.map((item, i) => (
           <div key={item._id} className="w-[64vw] shrink-0 snap-start sm:w-[40vw]">
-            <ProductItem id={item._id} images={item.images} name={item.name} price={item.price} index={i} />
+            <ProductItem sizes={item.sizes} id={item._id} images={item.images} name={item.name} price={item.price} index={i} />
           </div>
         ))}
       </Rail>

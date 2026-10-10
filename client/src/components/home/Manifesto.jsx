@@ -47,7 +47,7 @@ const Manifesto = () => {
 
   return (
     <section ref={ref} className="gutter relative bg-bone py-28 sm:py-40" aria-label="Our philosophy">
-      <p className="eyebrow mb-10 text-mute">( 03 ) — Manifesto</p>
+      <p className="eyebrow mb-10 text-mute">( 04 ) — Manifesto</p>
       <div className="grid items-center gap-16 lg:grid-cols-[1fr_minmax(260px,30%)]">
       <p className="display max-w-[22ch] text-[clamp(38px,6vw,104px)] leading-[1.02]" aria-label={COPY.replace(/\{\d\}\s?/g, "")}>
         {tokens.map((t, i) => {

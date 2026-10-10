@@ -2,11 +2,12 @@ import { useRef } from "react";
 import { Link } from "react-router-dom";
 import { motion, useScroll, useTransform, useReducedMotion } from "framer-motion";
 import assets from "../../assets/assets";
+import { editorial } from "../../assets/editorial";
 import SplitText from "../motion/SplitText";
 import { ease, pad } from "../../lib/motion";
 
 const CATS = [
-  { name: "Men", img: assets.men_collection1, line: "Structured, easy, built to repeat." },
+  { name: "Men", img: editorial.rosesPanel, line: "Structured, easy, built to repeat." },
   { name: "Women", img: assets.women_collection, line: "Fluid lines, sharp details." },
   { name: "Kids", img: assets.kids_collection, line: "Made for mess. Made to last." },
 ];
@@ -51,7 +52,7 @@ const Panel = ({ cat, i }) => {
             {cat.line}
           </p>
         </div>
-        <span className="mb-2 flex h-12 w-12 items-center justify-center rounded-full border border-bone/40 text-lg transition-all duration-500 group-hover:-rotate-45 group-hover:border-ember group-hover:bg-ember group-hover:text-ink">
+        <span className="glass-chip mb-2 flex h-12 w-12 items-center justify-center rounded-full text-lg transition-all duration-500 group-hover:-rotate-45 group-hover:!bg-ember">
           →
         </span>
       </div>
@@ -64,7 +65,7 @@ const CategoryPanels = () => (
   <section className="gutter py-24 sm:py-32" aria-labelledby="cat-title">
     <div className="mb-10 flex flex-col justify-between gap-6 sm:mb-14 sm:flex-row sm:items-end">
       <div>
-        <p className="eyebrow text-mute">( 02 ) — Shop by wardrobe</p>
+        <p className="eyebrow text-mute">( 03 ) — Shop by wardrobe</p>
         <h2 id="cat-title" className="display mt-5 text-[clamp(48px,6.5vw,112px)]">
           <SplitText text="Dress *everyone*" accentClassName="italic text-ember" />
         </h2>

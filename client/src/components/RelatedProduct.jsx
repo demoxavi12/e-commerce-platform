@@ -26,7 +26,7 @@ const RelatedProduct = ({ category, subCategory, currentId }) => {
       <Rail label="Related products">
         {related.map((item, i) => (
           <div key={item._id} className="w-[60vw] shrink-0 snap-start sm:w-[32vw] lg:w-[21vw]">
-            <ProductItem id={item._id} images={item.images} name={item.name} price={item.price} index={i} category={item.category} />
+            <ProductItem sizes={item.sizes} id={item._id} images={item.images} name={item.name} price={item.price} index={i} category={item.category} />
           </div>
         ))}
       </Rail>

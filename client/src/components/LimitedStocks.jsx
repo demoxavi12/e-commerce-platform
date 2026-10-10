@@ -40,7 +40,7 @@ const LimitedStocks = () => {
       <Rail ref={sliderRef} label="Limited editions">
         {limitedProducts.map((item, i) => (
           <div key={item._id} className="w-[64vw] shrink-0 snap-start sm:w-[34vw] lg:w-[22vw]">
-            <ProductItem id={item._id} images={item.images} name={item.name} price={item.price} index={i} tag="Limited" />
+            <ProductItem sizes={item.sizes} id={item._id} images={item.images} name={item.name} price={item.price} index={i} tag="Limited" />
           </div>
         ))}
       </Rail>

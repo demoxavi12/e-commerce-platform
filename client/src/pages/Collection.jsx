@@ -11,6 +11,16 @@ import BrandCollection from "../components/BrandCollection";
 import LimitedStocks from "../components/LimitedStocks";
 import AnimatedNumber from "../components/motion/AnimatedNumber";
 import { ease, pad } from "../lib/motion";
+import assets from "../assets/assets";
+import { editorial } from "../assets/editorial";
+
+// Header photography per category (project assets only).
+const HEADER_IMAGE = {
+  all: editorial.whiteCircle,
+  Men: editorial.rosesPanel,
+  Women: assets.women_collection,
+  Kids: assets.kids_collection,
+};
 
 const categories = [
   { name: "Men", types: ["TopWear", "BottomWear", "WinterWear"] },
@@ -107,21 +117,41 @@ const Collection = () => {
         <p className="eyebrow text-mute">
           ( Shop ) — {slug ? slug.replace(/-/g, " ") : activeCategory ? `${activeCategory}${activeType ? ` / ${activeType}` : ""}` : "Everything"}
         </p>
-        <div className="mt-5 flex flex-wrap items-end justify-between gap-6">
-          <h1 className="display text-[clamp(56px,10vw,176px)]">
-            <SplitText text={activeCategory ? `${activeCategory}’s *edit*` : "The *collection*"} trigger="mount" accentClassName="italic text-ember" key={activeCategory || "all"} />
-          </h1>
-          <p className="pb-3 font-mono text-sm text-mute">
-            <AnimatedNumber value={sortedProducts.length} format={(n) => pad(Math.round(n), 3)} /> pieces
-          </p>
+        <div className="mt-5 grid items-end gap-8 md:grid-cols-[1fr_minmax(260px,34%)]">
+          <div className="flex flex-wrap items-end justify-between gap-6">
+            <h1 className="display text-[clamp(56px,10vw,176px)]">
+              <SplitText text={activeCategory ? `${activeCategory}’s *edit*` : "The *collection*"} trigger="mount" accentClassName="italic text-ember" key={activeCategory || "all"} />
+            </h1>
+            <p className="pb-3 font-mono text-sm text-mute">
+              <AnimatedNumber value={sortedProducts.length} format={(n) => pad(Math.round(n), 3)} /> pieces
+            </p>
+          </div>
+          {/* Category-aware campaign image; wipes across when the category changes */}
+          <div className="relative hidden aspect-[16/10] overflow-hidden rounded-[6px] bg-stone-2 md:block">
+            <AnimatePresence initial={false}>
+              <motion.img
+                key={activeCategory || "all"}
+                src={HEADER_IMAGE[activeCategory || "all"]}
+                alt=""
+                initial={{ clipPath: "inset(0% 0% 0% 100%)", scale: 1.08 }}
+                animate={{ clipPath: "inset(0% 0% 0% 0%)", scale: 1 }}
+                exit={{ opacity: 0, transition: { duration: 0.6, delay: 0.3 } }}
+                transition={{ duration: 0.9, ease: ease.inOut }}
+                className="absolute inset-0 h-full w-full object-cover object-[50%_30%]"
+              />
+            </AnimatePresence>
+            <span className="glass-chip absolute bottom-3 left-3 rounded-full px-3 py-1.5 eyebrow !text-[10px]">
+              {activeCategory || "All"} · SS—26
+            </span>
+          </div>
         </div>
       </header>
 
       <Searchbar />
 
       {/* ===== FILTER BAR ===== */}
-      <div className="sticky top-0 z-30 border-y border-ink/10 bg-bone/85 backdrop-blur-xl">
-        <div className="gutter flex flex-wrap items-center justify-between gap-3 py-3">
+      <div className="glass sticky top-3 z-30 mx-[var(--gutter)] rounded-[22px]">
+        <div className="flex flex-wrap items-center justify-between gap-3 px-2 py-2 sm:px-3">
           <LayoutGroup id="cats">
             <div className="scrollbar-hide -mx-1 flex items-center gap-1 overflow-x-auto px-1" role="tablist" aria-label="Category">
               {[{ name: null, label: "All" }, ...categories.map((c) => ({ name: c.name, label: c.name }))].map((c) => {
@@ -166,7 +196,7 @@ const Collection = () => {
                   animate={{ opacity: 1, y: 0, clipPath: "inset(0% 0% 0% 0%)" }}
                   exit={{ opacity: 0, y: -8, clipPath: "inset(0% 0% 100% 0%)" }}
                   transition={{ duration: 0.4, ease: ease.out }}
-                  className="absolute right-0 top-full z-50 mt-2 w-64 bg-ink p-2 text-bone shadow-[var(--shadow-float)]"
+                  className="glass-dark absolute right-0 top-full z-50 mt-3 w-64 rounded-2xl p-2"
                 >
                   {SORTS.map((opt) => (
                     <li key={opt.value}>
@@ -178,7 +208,7 @@ const Collection = () => {
                           setSortOption(opt.value);
                           setSortOpen(false);
                         }}
-                        className="flex w-full items-center justify-between px-3 py-2.5 text-left text-sm transition-colors hover:bg-bone/10"
+                        className="flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left text-sm transition-colors hover:bg-bone/10"
                       >
                         {opt.label}
                         {sortOption === opt.value && <Check size={14} className="text-ember" />}
@@ -201,7 +231,7 @@ const Collection = () => {
               transition={{ duration: 0.45, ease: ease.out }}
               className="overflow-hidden"
             >
-              <div className="gutter flex flex-wrap gap-2 pb-3">
+              <div className="flex flex-wrap gap-2 px-3 pb-3">
                 {[null, ...currentCat.types].map((t, i) => (
                   <motion.button
                     key={t || "all"}
@@ -213,7 +243,7 @@ const Collection = () => {
                       setLimit(PAGE);
                     }}
                     aria-pressed={activeType === t}
-                    className={`h-9 border px-4 text-[13px] transition-colors ${activeType === t ? "border-ink bg-ink text-bone" : "border-ink/15 hover:border-ink"}`}
+                    className={`h-9 rounded-full border px-4 text-[13px] transition-colors ${activeType === t ? "border-ink bg-ink text-bone" : "border-ink/15 bg-white/40 hover:border-ink"}`}
                   >
                     {t ? t.replace(/Wear/, " wear") : `All ${currentCat.name.toLowerCase()}`}
                   </motion.button>
@@ -263,7 +293,7 @@ const Collection = () => {
                   exit={{ opacity: 0, scale: 0.96, transition: { duration: 0.2 } }}
                   transition={{ duration: 0.6, ease: ease.out }}
                 >
-                  <ProductItem id={item._id} images={item.images} name={item.name} price={item.price} index={index} category={item.category} tag={item.limitedStocks ? "Limited" : item.bestseller ? "Best" : undefined} />
+                  <ProductItem sizes={item.sizes} id={item._id} images={item.images} name={item.name} price={item.price} index={index} category={item.category} tag={item.limitedStocks ? "Limited" : item.bestseller ? "Best" : undefined} />
                 </motion.li>
               ))}
             </AnimatePresence>

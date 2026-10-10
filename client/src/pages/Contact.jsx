@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Check } from "lucide-react";
-import assets from "../assets/assets";
+import { editorial } from "../assets/editorial";
 import NewsLetterBox from "../components/NewsLetterBox";
 import SplitText from "../components/motion/SplitText";
 import Reveal from "../components/motion/Reveal";
@@ -26,7 +26,7 @@ const Contact = () => {
       <section className="gutter grid gap-14 pb-24 md:grid-cols-2 md:gap-20">
         <div>
           <Reveal variant="clip" className="aspect-[4/3] overflow-hidden bg-stone-2">
-            <img src={assets.contact_img} alt="The ELEVÉ store" loading="lazy" className="h-full w-full object-cover" />
+            <img src={editorial.studioDesk} alt="A desk with a laptop, coffee and a phone" loading="lazy" className="h-full w-full object-cover" />
           </Reveal>
           <dl className="mt-10 grid gap-8 sm:grid-cols-2">
             {[

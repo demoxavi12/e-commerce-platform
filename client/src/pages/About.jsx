@@ -1,6 +1,6 @@
 import { useRef } from "react";
 import { motion, useScroll, useTransform, useReducedMotion } from "framer-motion";
-import assets from "../assets/assets";
+import { editorial } from "../assets/editorial";
 import NewsLetterBox from "../components/NewsLetterBox";
 import SplitText from "../components/motion/SplitText";
 import Reveal from "../components/motion/Reveal";
@@ -29,7 +29,7 @@ const About = () => {
 
       <section className="gutter grid gap-12 pb-24 md:grid-cols-[1fr_1fr] md:items-center md:gap-20">
         <Reveal variant="clip" className="relative aspect-[4/5] overflow-hidden bg-stone-2" ref={ref}>
-          <motion.img src={assets.about_img} alt="Inside the ELEVÉ studio" loading="lazy" style={{ y, scale: 1.2 }} className="h-full w-full object-cover" />
+          <motion.img src={editorial.flatlay} alt="Flat lay of denim, knitwear and suede boots" loading="lazy" style={{ y, scale: 1.2 }} className="h-full w-full object-cover" />
         </Reveal>
         <div className="space-y-6 text-[17px] leading-relaxed text-mute">
           <Reveal>

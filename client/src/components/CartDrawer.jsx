@@ -46,13 +46,13 @@ const CartDrawer = () => {
             role="dialog"
             aria-modal="true"
             aria-label="Shopping bag"
-            className="absolute inset-y-0 right-0 flex w-full max-w-[460px] flex-col bg-bone outline-none shadow-[var(--shadow-float)]"
-            initial={{ x: "100%" }}
+            className="glass-strong absolute inset-y-2 right-2 flex w-[calc(100%-16px)] max-w-[460px] flex-col overflow-hidden rounded-[28px] outline-none sm:inset-y-3 sm:right-3"
+            initial={{ x: "110%" }}
             animate={{ x: 0 }}
-            exit={{ x: "100%" }}
+            exit={{ x: "110%" }}
             transition={{ duration: 0.75, ease: ease.inOut }}
           >
-            <header className="flex items-center justify-between border-b border-ink/10 px-6 py-5">
+            <header className="flex items-center justify-between border-b border-ink/10 px-6 py-4">
               <div className="flex items-baseline gap-3">
                 <h2 className="display text-4xl">Bag</h2>
                 <span className="font-mono text-xs text-mute">({count})</span>

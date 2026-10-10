@@ -1,10 +1,11 @@
-import { useContext, useState } from "react";
+import { useContext, useState, useRef } from "react";
 import { Link, NavLink, useLocation } from "react-router-dom";
 import { AnimatePresence, motion, useMotionValueEvent, useScroll } from "framer-motion";
 import { Search, User, ShoppingBag } from "lucide-react";
 import { ShopContext } from "../context/shop-context";
 import { useUI } from "../context/ui-context";
 import { ease } from "../lib/motion";
+import { useSpecular } from "../hooks/useSpecular";
 
 const LINKS = [
   { to: "/", label: "Home" },
@@ -45,26 +46,30 @@ const Navbar = () => {
     if (nextScrolled !== scrolled) setScrolled(nextScrolled);
   });
 
-  // Light-on-dark only while the home hero is behind the bar.
+  // Dark glass while the home hero is behind the bar, light glass elsewhere.
   const overHero = isHome && heroZone;
   const dark = overHero && !menuOpen;
-  const solid = scrolled && !overHero && !menuOpen;
+  const sheenRef = useRef(null);
+  const specular = useSpecular(sheenRef);
 
   return (
     <motion.header
       initial={{ y: -100, opacity: 0 }}
-      animate={{ y: hidden ? "-110%" : 0, opacity: 1 }}
+      animate={{ y: hidden ? "-130%" : 0, opacity: 1 }}
       transition={{ duration: 0.7, ease: ease.out }}
-      className={`fixed inset-x-0 top-0 z-[60] transition-colors duration-500 ${dark || menuOpen ? "text-bone" : "text-ink"}`}
+      className={`fixed inset-x-0 top-0 z-[60] px-2.5 pt-2.5 transition-colors duration-500 sm:px-4 sm:pt-3 ${dark || menuOpen ? "text-bone" : "text-ink"}`}
     >
+      {/* Floating glass bar. Material swaps dark ↔ light by cross-fading two
+          layers (backdrop-filter itself can't transition smoothly). */}
       <div
-        className={`absolute inset-0 -z-10 transition-[opacity,backdrop-filter] duration-500 ${
-          solid ? "bg-bone/80 opacity-100 backdrop-blur-xl" : "opacity-0"
-        }`}
-      />
-      <div className={`absolute inset-x-0 bottom-0 h-px transition-opacity duration-500 ${solid ? "bg-ink/10 opacity-100" : "opacity-0"}`} />
+        ref={sheenRef}
+        {...specular}
+        className={`glass-sheen relative mx-auto rounded-[22px] transition-[box-shadow] duration-500 ${scrolled ? "shadow-[0_18px_50px_-24px_rgb(13_13_11/0.45)]" : ""}`}
+      >
+        <div aria-hidden="true" className={`glass-dark absolute inset-0 -z-20 rounded-[inherit] transition-opacity duration-500 ${dark ? "opacity-100" : "opacity-0"}`} />
+        <div aria-hidden="true" className={`glass absolute inset-0 -z-20 rounded-[inherit] transition-opacity duration-500 ${!dark && !menuOpen ? "opacity-100" : "opacity-0"}`} />
 
-      <nav aria-label="Primary" className="gutter mx-auto grid h-[var(--nav-h)] grid-cols-[1fr_auto_1fr] items-center">
+      <nav aria-label="Primary" className="mx-auto grid h-[calc(var(--nav-h)-14px)] grid-cols-[1fr_auto_1fr] items-center px-4 sm:px-6">
         {/* Left: links (desktop) / menu toggle (mobile) */}
         <div className="flex items-center">
           <ul className="hidden items-center gap-7 lg:flex">
@@ -139,18 +144,18 @@ const Navbar = () => {
             )}
             {token && (
               <div className="pointer-events-none absolute right-0 top-full translate-y-2 pt-2 opacity-0 transition-all duration-300 ease-[var(--ease-out-expo)] group-focus-within:pointer-events-auto group-focus-within:translate-y-0 group-focus-within:opacity-100 group-hover:pointer-events-auto group-hover:translate-y-0 group-hover:opacity-100">
-                <div className="w-56 bg-ink p-2 text-bone shadow-[var(--shadow-float)]">
+                <div className="glass-dark w-56 rounded-2xl p-2">
                   <p className="eyebrow px-3 pb-2 pt-1 text-bone/50">Account</p>
                   {[
                     { to: "/profile", label: "Profile" },
                     { to: "/orders", label: "Orders" },
                   ].map((i) => (
-                    <Link key={i.to} to={i.to} className="group/i flex items-center justify-between px-3 py-2.5 text-sm transition-colors hover:bg-bone/10">
+                    <Link key={i.to} to={i.to} className="group/i flex items-center justify-between rounded-xl px-3 py-2.5 text-sm transition-colors hover:bg-bone/10">
                       {i.label}
                       <span className="translate-x-[-4px] opacity-0 transition-all group-hover/i:translate-x-0 group-hover/i:opacity-100">→</span>
                     </Link>
                   ))}
-                  <button type="button" onClick={logout} className="w-full px-3 py-2.5 text-left text-sm text-ember transition-colors hover:bg-ember hover:text-ink">
+                  <button type="button" onClick={logout} className="w-full rounded-xl px-3 py-2.5 text-left text-sm text-ember transition-colors hover:bg-ember hover:text-ink">
                     Log out
                   </button>
                 </div>
@@ -179,6 +184,7 @@ const Navbar = () => {
           </button>
         </div>
       </nav>
+      </div>
     </motion.header>
   );
 };

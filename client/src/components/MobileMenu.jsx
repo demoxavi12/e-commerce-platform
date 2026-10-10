@@ -31,7 +31,7 @@ const MobileMenu = () => {
           role="dialog"
           aria-modal="true"
           aria-label="Menu"
-          className="fixed inset-0 z-[55] flex flex-col bg-ink text-bone outline-none lg:hidden"
+          className="glass-dark fixed inset-0 z-[55] flex flex-col !rounded-none !border-0 bg-ink/40 text-bone outline-none lg:hidden"
           initial={{ clipPath: "inset(0% 0% 100% 0%)" }}
           animate={{ clipPath: "inset(0% 0% 0% 0%)" }}
           exit={{ clipPath: "inset(0% 0% 100% 0%)", transition: { duration: 0.6, ease: ease.inOut, delay: 0.1 } }}

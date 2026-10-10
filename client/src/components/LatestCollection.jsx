@@ -74,7 +74,7 @@ const LatestCollection = () => {
 
   const cards = latestProducts.map((item, i) => (
     <motion.div key={item._id} style={pinned ? { skewX } : undefined} className={`w-[64vw] shrink-0 snap-start sm:w-[38vw] lg:w-[22vw] ${pinned && i % 2 === 1 ? "lg:mt-24" : ""}`}>
-      <ProductItem id={item._id} images={item.images} name={item.name} price={item.price} index={i} category={item.category} tag={i === 0 ? "New" : undefined} />
+      <ProductItem sizes={item.sizes} id={item._id} images={item.images} name={item.name} price={item.price} index={i} category={item.category} tag={i === 0 ? "New" : undefined} />
     </motion.div>
   ));
 

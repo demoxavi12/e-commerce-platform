@@ -3,14 +3,17 @@ import LatestCollection from "../components/LatestCollection";
 import BestSeller from "../components/BestSeller";
 import TopBrands from "../components/TopBrands";
 import OurPolicy from "../components/OurPolicy";
-import NewsLetterBox from "../components/NewsLetterBox";
 import NInjaMask from "../components/NInjaMask";
 import CategoryPanels from "../components/home/CategoryPanels";
 import Manifesto from "../components/home/Manifesto";
+import TheEdits from "../components/home/TheEdits";
+import BrandStory from "../components/home/BrandStory";
+import FinalCTA from "../components/home/FinalCTA";
 import Marquee from "../components/motion/Marquee";
 
-// Story order: Hero → ticker → New arrivals (horizontal) → Wardrobes →
-// Manifesto → Bestsellers (3D ring) → Limited edition → Brands → Promises → Newsletter
+// Story order: Hero → ticker → New arrivals (horizontal) → The edits →
+// Wardrobes → Manifesto → Bestsellers (3D ring) → Limited campaign →
+// Brand story → Brands → Promises → Final CTA
 const Ticker = () => (
   <div className="bg-ember py-3 text-ink" aria-hidden="true">
     <Marquee baseVelocity={-3} repeat={4}>
@@ -28,13 +31,15 @@ const Home = () => (
     <Hero />
     <Ticker />
     <LatestCollection />
+    <TheEdits />
     <CategoryPanels />
     <Manifesto />
     <BestSeller />
     <NInjaMask />
+    <BrandStory />
     <TopBrands />
     <OurPolicy />
-    <NewsLetterBox />
+    <FinalCTA />
   </>
 );
 

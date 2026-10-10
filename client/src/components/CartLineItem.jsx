@@ -12,13 +12,13 @@ import { img } from "../lib/image";
 export const QtyStepper = ({ value, onChange, min = 1, size = "md" }) => {
   const h = size === "sm" ? "h-9" : "h-11";
   return (
-    <div className={`inline-flex ${h} items-center border border-ink/15`}>
+    <div className={`inline-flex ${h} items-center rounded-full border border-ink/15 bg-white/40 p-0.5`}>
       <button
         type="button"
         onClick={() => onChange(Math.max(min, value - 1))}
         disabled={value <= min}
         aria-label="Decrease quantity"
-        className={`flex ${h} w-9 items-center justify-center transition-colors hover:bg-ink hover:text-bone disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-current`}
+        className={`flex h-full w-9 items-center justify-center rounded-full transition-colors hover:bg-ink hover:text-bone disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-current`}
       >
         <Minus size={14} />
       </button>
@@ -31,7 +31,7 @@ export const QtyStepper = ({ value, onChange, min = 1, size = "md" }) => {
         type="button"
         onClick={() => onChange(value + 1)}
         aria-label="Increase quantity"
-        className={`flex ${h} w-9 items-center justify-center transition-colors hover:bg-ink hover:text-bone`}
+        className={`flex h-full w-9 items-center justify-center rounded-full transition-colors hover:bg-ink hover:text-bone`}
       >
         <Plus size={14} />
       </button>
@@ -53,7 +53,7 @@ const CartLineItem = ({ item, onNavigate, compact = false }) => {
       transition={{ duration: 0.6, ease: ease.out }}
       className="flex gap-4 border-b border-ink/10 py-5"
     >
-      <Link to={`/product/${product._id}`} onClick={onNavigate} className={`group shrink-0 overflow-hidden bg-stone-2 ${compact ? "h-28 w-22" : "h-36 w-28 sm:h-44 sm:w-36"}`}>
+      <Link to={`/product/${product._id}`} onClick={onNavigate} className={`group shrink-0 overflow-hidden rounded-[14px] bg-stone-2 ${compact ? "h-28 w-22" : "h-36 w-28 sm:h-44 sm:w-36"}`}>
         <img src={img(product.images?.[0], 320)} alt={product.name} loading="lazy" className="h-full w-full object-cover transition-transform duration-700 ease-[var(--ease-out-expo)] group-hover:scale-105" />
       </Link>
 

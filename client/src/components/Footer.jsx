@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Facebook, Instagram, Twitter, Youtube, ArrowUp } from "lucide-react";
 import ShaderCanvas from "./motion/ShaderCanvas";
@@ -42,8 +42,11 @@ const socials = [
   { icon: Youtube, href: "https://www.youtube.com/@Turning_wheel6608", label: "YouTube" },
 ];
 
-const Footer = () => (
-  <footer className="relative mt-24 overflow-hidden bg-ink text-bone">
+const Footer = () => {
+  // Home ends on a full-bleed image that should meet the footer directly.
+  const { pathname } = useLocation();
+  return (
+  <footer className={`relative overflow-hidden bg-ink text-bone ${pathname === "/" ? "" : "mt-24"}`}>
     <ShaderCanvas palette="dusk" grain={0.05} className="opacity-70" />
     <div className="relative">
       <div className="gutter grid gap-12 pb-16 pt-20 md:grid-cols-[1.4fr_repeat(3,1fr)]">
@@ -114,6 +117,7 @@ const Footer = () => (
       </div>
     </div>
   </footer>
-);
+  );
+};
 
 export default Footer;

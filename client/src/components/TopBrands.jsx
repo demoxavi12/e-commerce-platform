@@ -14,7 +14,7 @@ const brands = [
 const TopBrands = () => (
   <section className="border-y border-ink/10 py-10" aria-label="Top brands we carry">
     <div className="gutter mb-8 flex items-center justify-between">
-      <p className="eyebrow text-mute">( 06 ) — Also in store</p>
+      <p className="eyebrow text-mute">( 08 ) — Also in store</p>
       <ul className="sr-only">
         {brands.map((b) => (
           <li key={b.id}>{b.name}</li>

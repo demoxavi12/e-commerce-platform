@@ -10,7 +10,7 @@ import { img } from "../lib/image";
 // Desktop: 3D tilt toward cursor, light sheen that follows the pointer,
 // alternate image cross-fade (if the product has one), "View" cursor label,
 // sliding info row with price swap. Touch: static, info always visible.
-const ProductItem = ({ id, images, name, price, index, category, tag, className = "", sizes = "" }) => {
+const ProductItem = ({ id, images, name, price, index, category, tag, className = "", sizes = [] }) => {
   const { currecy } = useContext(ShopContext);
   const fine = useFinePointer();
   const reduced = useReducedMotion();
@@ -18,6 +18,7 @@ const ProductItem = ({ id, images, name, price, index, category, tag, className 
   const ref = useRef(null);
 
   const list = Array.isArray(images) ? images : [images];
+  const sizeList = Array.isArray(sizes) ? sizes : [];
   const primary = list[0];
   const alt = list[1];
 
@@ -55,14 +56,13 @@ const ProductItem = ({ id, images, name, price, index, category, tag, className 
           onPointerMove={onMove}
           onPointerLeave={onLeave}
           style={interactive ? { rotateX: rx, rotateY: ry, transformStyle: "preserve-3d" } : undefined}
-          className="relative aspect-[3/4] overflow-hidden bg-stone-2"
+          className="relative aspect-[3/4] overflow-hidden rounded-[6px] bg-stone-2"
         >
           <img
             src={img(primary, 700)}
             alt=""
             loading="lazy"
             decoding="async"
-            sizes={sizes || undefined}
             className={`absolute inset-0 h-full w-full object-cover transition-[transform,opacity] duration-[1.1s] ease-[var(--ease-out-expo)] group-hover:scale-[1.06] ${alt ? "group-hover:opacity-0" : ""}`}
           />
           {alt && (
@@ -80,15 +80,21 @@ const ProductItem = ({ id, images, name, price, index, category, tag, className 
           )}
 
           {/* Corner meta */}
-          <div className="pointer-events-none absolute inset-x-0 top-0 flex items-start justify-between p-3">
-            {typeof index === "number" && <span className="eyebrow !text-[10px] text-ink/60">N°{pad(index + 1, 3)}</span>}
-            {tag && <span className="bg-ink px-2 py-1 eyebrow !text-[9px] text-bone">{tag}</span>}
+          <div className="pointer-events-none absolute inset-x-0 top-0 flex items-start justify-between p-2.5">
+            {typeof index === "number" && <span className="glass-chip rounded-full px-2 py-1 eyebrow !text-[9px]">N°{pad(index + 1, 3)}</span>}
+            {tag && <span className="glass-dark rounded-full px-2.5 py-1 eyebrow !text-[9px]">{tag}</span>}
           </div>
 
-          {/* Hover CTA bar (desktop) */}
-          <div className="pointer-events-none absolute inset-x-3 bottom-3 hidden translate-y-[calc(100%+12px)] items-center justify-between bg-bone/90 px-3 py-2.5 backdrop-blur-md transition-transform duration-700 ease-[var(--ease-out-expo)] group-hover:translate-y-0 [@media(hover:hover)]:flex">
-            <span className="label-ui !text-[10px]">View piece</span>
-            <span className="text-sm transition-transform duration-500 group-hover:translate-x-0">→</span>
+          {/* Glass quick-action bar (hover devices): real sizes from the API + view */}
+          <div className="glass pointer-events-none absolute inset-x-2.5 bottom-2.5 hidden translate-y-[calc(100%+14px)] items-center justify-between gap-2 rounded-[16px] px-3.5 py-2.5 transition-transform duration-700 ease-[var(--ease-out-expo)] group-hover:translate-y-0 [@media(hover:hover)]:flex">
+            {sizeList.length > 0 ? (
+              <span className="min-w-0 truncate font-mono text-[11px] text-ink/80">{sizeList.join(" · ")}</span>
+            ) : (
+              <span className="label-ui !text-[10px]">View piece</span>
+            )}
+            <span className="flex shrink-0 items-center gap-1 label-ui !text-[10px]">
+              View <span aria-hidden="true">→</span>
+            </span>
           </div>
         </motion.div>
 

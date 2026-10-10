@@ -49,11 +49,11 @@ const SearchOverlay = () => {
             role="dialog"
             aria-modal="true"
             aria-label="Search products"
-            className="relative max-h-[90svh] overflow-y-auto bg-bone outline-none"
+            className="glass-strong relative m-2 max-h-[88svh] overflow-y-auto rounded-[28px] outline-none sm:m-3"
             data-lenis-prevent
-            initial={{ y: "-100%" }}
+            initial={{ y: "-110%" }}
             animate={{ y: 0 }}
-            exit={{ y: "-100%" }}
+            exit={{ y: "-110%" }}
             transition={{ duration: 0.7, ease: ease.inOut }}
           >
             <div className="gutter pb-10 pt-6">
@@ -91,7 +91,7 @@ const SearchOverlay = () => {
                       key={s}
                       type="button"
                       onClick={() => setSearch(s)}
-                      className="border border-ink/15 px-4 py-2 text-sm transition-colors hover:border-ink hover:bg-ink hover:text-bone"
+                      className="glass-chip rounded-full px-4 py-2 text-sm transition-colors hover:!bg-ink hover:text-bone"
                     >
                       {s}
                     </button>
@@ -114,7 +114,7 @@ const SearchOverlay = () => {
                         exit={{ opacity: 0, transition: { duration: 0.15 } }}
                       >
                         <Link to={`/product/${p._id}`} onClick={close} className="group block" data-cursor="View">
-                          <div className="aspect-[3/4] overflow-hidden bg-stone-2">
+                          <div className="aspect-[3/4] overflow-hidden rounded-[16px] bg-stone-2">
                             <img src={img(p.images?.[0], 400)} alt="" loading="lazy" className="h-full w-full object-cover transition-transform duration-700 ease-[var(--ease-out-expo)] group-hover:scale-105" />
                           </div>
                           <p className="mt-2 line-clamp-1 text-sm">{p.name}</p>
