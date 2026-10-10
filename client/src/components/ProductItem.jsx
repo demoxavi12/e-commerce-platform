@@ -1,4 +1,4 @@
-import { useContext, useRef } from "react";
+import { useContext, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { motion, useMotionValue, useSpring, useTransform, useMotionTemplate, useReducedMotion } from "framer-motion";
 import { ShopContext } from "../context/shop-context";
@@ -17,10 +17,14 @@ const ProductItem = ({ id, images, name, price, index, category, tag, className 
   const interactive = fine && !reduced;
   const ref = useRef(null);
 
-  const list = Array.isArray(images) ? images : [images];
+  const list = (Array.isArray(images) ? images : [images]).filter((u) => typeof u === "string" && u.trim());
   const sizeList = Array.isArray(sizes) ? sizes : [];
-  const primary = list[0];
-  const alt = list[1];
+  // Missing or failing image URLs fall back to a typographic panel instead of a
+  // broken-image icon; the hover crossfade only uses a second image that loads.
+  const [primaryFailed, setPrimaryFailed] = useState(false);
+  const [altFailed, setAltFailed] = useState(false);
+  const primary = primaryFailed ? undefined : list[0];
+  const alt = altFailed ? undefined : list[1];
 
   const px = useMotionValue(0.5);
   const py = useMotionValue(0.5);
@@ -58,19 +62,28 @@ const ProductItem = ({ id, images, name, price, index, category, tag, className 
           style={interactive ? { rotateX: rx, rotateY: ry, transformStyle: "preserve-3d" } : undefined}
           className="relative aspect-[3/4] overflow-hidden rounded-[6px] bg-stone-2"
         >
-          <img
-            src={img(primary, 700)}
-            alt=""
-            loading="lazy"
-            decoding="async"
-            className={`absolute inset-0 h-full w-full object-cover transition-[transform,opacity] duration-[1.1s] ease-[var(--ease-out-expo)] group-hover:scale-[1.06] ${alt ? "group-hover:opacity-0" : ""}`}
-          />
-          {alt && (
+          {primary ? (
+            <img
+              src={img(primary, 700)}
+              alt=""
+              loading="lazy"
+              decoding="async"
+              onError={() => setPrimaryFailed(true)}
+              className={`absolute inset-0 h-full w-full object-cover transition-[transform,opacity] duration-[1.1s] ease-[var(--ease-out-expo)] group-hover:scale-[1.06] ${alt ? "group-hover:opacity-0" : ""}`}
+            />
+          ) : (
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-stone-2 p-4 text-center">
+              <span className="display line-clamp-3 text-2xl leading-tight text-ink/70">{name}</span>
+              <span className="eyebrow !text-[9px] text-mute">Image unavailable</span>
+            </div>
+          )}
+          {primary && alt && (
             <img
               src={img(alt, 700)}
               alt=""
               loading="lazy"
               decoding="async"
+              onError={() => setAltFailed(true)}
               className="absolute inset-0 h-full w-full scale-[1.08] object-cover opacity-0 transition-[transform,opacity] duration-[1.1s] ease-[var(--ease-out-expo)] group-hover:scale-100 group-hover:opacity-100"
             />
           )}

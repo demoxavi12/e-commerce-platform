@@ -16,6 +16,12 @@ const ShopContextProvider = (props) => {
     const [cartItems, setCartItems] = useState({}); // { productId: quantity }
     const navigate = useNavigate();
     const [products, setProducts] = useState([]);
+    // Catalogue request state, so pages can tell "still loading" apart from
+    // "the request failed" (previously both looked like an empty array).
+    // A missing VITE_BACKEND_URL is a configuration error from the start.
+    const [productsStatus, setProductsStatus] = useState(() => (backendUrl ? 'loading' : 'error'));
+    const [productsError, setProductsError] = useState(() => (backendUrl ? '' : 'The store is not configured to reach its API (VITE_BACKEND_URL is missing).'));
+    const [productsRequest, setProductsRequest] = useState(0);
     // Restore the session synchronously so the first render already knows the user.
     const [token, setToken] = useState(() => localStorage.getItem('token'));
 
@@ -135,26 +141,53 @@ const ShopContextProvider = (props) => {
 
 
 
-    // Product catalogue (once per backend URL).
+    // Product catalogue (per backend URL, and again on every retry).
+    // Always settles to 'ready' or 'error' — the 15s timeout means a hanging
+    // API can never leave the storefront in a permanent loading state.
     useEffect(() => {
         // Check if backendUrl exists to avoid sending requests to "undefined"
         if (!backendUrl) {
             console.error("VITE_BACKEND_URL is not defined in your .env file");
             return;
         }
-        axios.get(`${backendUrl}/api/product/list`)
+        let cancelled = false;
+        axios.get(`${backendUrl}/api/product/list`, { timeout: 15000 })
             .then((response) => {
-                if (response.data.success) {
+                if (cancelled) return;
+                if (response.data.success && Array.isArray(response.data.products)) {
                     setProducts(response.data.products);
+                    setProductsStatus('ready');
                 } else {
-                    toast.error(response.data.message);
+                    setProductsError(response.data.message || 'The store returned an unexpected response.');
+                    setProductsStatus('error');
+                    toast.error(response.data.message || 'Could not load products');
                 }
             })
             .catch((error) => {
+                if (cancelled) return;
                 console.log(error);
-                toast.error(error.message);
+                // No HTTP response = the API is down or unreachable (a crashed
+                // serverless function also has no CORS headers → "Network Error").
+                const message = error.response
+                    ? `The store API responded with an error (${error.response.status}).`
+                    : error.code === 'ECONNABORTED'
+                        ? 'The store API took too long to respond.'
+                        : 'We couldn’t reach the store API. It may be temporarily unavailable.';
+                setProductsError(message);
+                setProductsStatus('error');
+                toast.error('Could not load products');
             });
-    }, [backendUrl])
+        return () => {
+            cancelled = true;
+        };
+    }, [backendUrl, productsRequest])
+
+    const retryProducts = () => {
+        if (!backendUrl) return;
+        setProductsError('');
+        setProductsStatus('loading');
+        setProductsRequest((n) => n + 1);
+    }
 
     // Server cart for a restored session (same behaviour as before: on load only).
     useEffect(() => {
@@ -180,7 +213,7 @@ const ShopContextProvider = (props) => {
     }
 
     const value = {
-        products, currecy, currency: currecy, logout, shippingCost, search, setSearch, showSearch, setShowSearch, cartItems, addToCart, getCartCount, updateQuantity,
+        products, productsStatus, productsError, retryProducts, currecy, currency: currecy, logout, shippingCost, search, setSearch, showSearch, setShowSearch, cartItems, addToCart, getCartCount, updateQuantity,
         getCartAmount,setCartItems, navigate, backendUrl, limitedProduct, token, setToken,
     }  // add state and functions as needed
     return (

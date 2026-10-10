@@ -1,4 +1,4 @@
-import { useContext, useState, useRef } from "react";
+import { useContext, useEffect, useState, useRef } from "react";
 import { Link, NavLink, useLocation } from "react-router-dom";
 import { AnimatePresence, motion, useMotionValueEvent, useScroll } from "framer-motion";
 import { Search, User, ShoppingBag } from "lucide-react";
@@ -45,6 +45,12 @@ const Navbar = () => {
     const nextScrolled = y > 12;
     if (nextScrolled !== scrolled) setScrolled(nextScrolled);
   });
+
+  // Publish visibility for sticky UI that must sit below the bar (e.g. the
+  // collection filter bar) — a DOM attribute, so nothing re-renders.
+  useEffect(() => {
+    document.documentElement.dataset.navHidden = hidden ? "true" : "false";
+  }, [hidden]);
 
   // Dark glass while the home hero is behind the bar, light glass elsewhere.
   const overHero = isHome && heroZone;

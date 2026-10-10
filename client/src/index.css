@@ -244,6 +244,17 @@ html.lenis body {
   .glass-strong { background: rgb(251 250 247 / 0.99); }
 }
 
+/* ---------- Sticky UI that docks under the floating navbar ----------
+   Sits just below the nav while it is visible; slides up when the nav hides
+   on scroll-down (Navbar sets html[data-nav-hidden]). */
+.filter-bar {
+  top: calc(var(--nav-h) + 6px);
+  transition: top 0.6s var(--ease-out-expo);
+}
+html[data-nav-hidden="true"] .filter-bar {
+  top: 12px;
+}
+
 /* ---------- Hover underline used by text links ---------- */
 @utility link-line {
   background-image: linear-gradient(currentColor, currentColor);

@@ -1,7 +1,7 @@
 import { useContext, useEffect, useMemo, useRef, useState } from "react";
-import { useParams, useSearchParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { AnimatePresence, LayoutGroup, motion } from "framer-motion";
-import { ChevronDown, Check } from "lucide-react";
+import { ChevronDown, Check, RefreshCw } from "lucide-react";
 import { ShopContext } from "../context/shop-context";
 import ProductItem from "../components/ProductItem";
 import Searchbar from "../components/Searchbar";
@@ -32,14 +32,15 @@ const SORTS = [
   { label: "Featured", value: "" },
   { label: "Price: Low → High", value: "price-low-high" },
   { label: "Price: High → Low", value: "price-high-low" },
-  { label: "Rating: High → Low", value: "rating-high-low" },
+  { label: "Newest first", value: "newest" },
   { label: "Name: A → Z", value: "name-az" },
 ];
 
 const PAGE = 12;
 
 const Collection = () => {
-  const { products, search, showSearch } = useContext(ShopContext);
+  const { products, productsStatus, productsError, retryProducts, search, setSearch, showSearch } = useContext(ShopContext);
+  const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
   const { slug } = useParams();
 
@@ -82,13 +83,16 @@ const Collection = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // A search overrides the sub-type filter too (derived, so nothing lingers).
+  const typeFilter = search.trim() ? null : activeType;
+
   // /collection/:slug (merch & brand tiles): soft filter by name if anything matches.
   const slugTerm = slug ? slug.replace(/-/g, " ").toLowerCase() : "";
 
   const sortedProducts = useMemo(() => {
     let list = products.filter((item) => {
       if (activeCategory && item.category?.toLowerCase() !== activeCategory.toLowerCase()) return false;
-      if (activeType && item.subcategory?.toLowerCase() !== activeType.toLowerCase()) return false;
+      if (typeFilter && item.subcategory?.toLowerCase() !== typeFilter.toLowerCase()) return false;
       if (search && !item.name.toLowerCase().includes(search.toLowerCase())) return false;
       return true;
     });
@@ -100,14 +104,21 @@ const Collection = () => {
       switch (sortOption) {
         case "price-low-high": return a.price - b.price;
         case "price-high-low": return b.price - a.price;
-        case "rating-high-low": return (b.rating || 0) - (a.rating || 0);
+        case "newest": return (b.date || 0) - (a.date || 0);
         case "name-az": return a.name.localeCompare(b.name);
         default: return 0;
       }
     });
-  }, [products, activeCategory, activeType, search, slugTerm, sortOption]);
+  }, [products, activeCategory, typeFilter, search, slugTerm, sortOption]);
 
   const visibleProducts = sortedProducts.slice(0, limit);
+  const resetFilters = () => {
+    setSearch("");
+    setActiveType(null);
+    setLimit(PAGE);
+    if (slug) navigate("/collection", { replace: true });
+    else setActiveCategory(null);
+  };
   const currentCat = categories.find((c) => c.name === activeCategory);
 
   return (
@@ -115,15 +126,23 @@ const Collection = () => {
       {/* ===== HEADER ===== */}
       <header className="gutter pb-10 pt-8 sm:pt-14">
         <p className="eyebrow text-mute">
-          ( Shop ) — {slug ? slug.replace(/-/g, " ") : activeCategory ? `${activeCategory}${activeType ? ` / ${activeType}` : ""}` : "Everything"}
+          ( Shop ) — {slug ? slug.replace(/-/g, " ") : activeCategory ? `${activeCategory}${typeFilter ? ` / ${typeFilter}` : ""}` : "Everything"}
         </p>
         <div className="mt-5 grid items-end gap-8 md:grid-cols-[1fr_minmax(260px,34%)]">
           <div className="flex flex-wrap items-end justify-between gap-6">
             <h1 className="display text-[clamp(56px,10vw,176px)]">
               <SplitText text={activeCategory ? `${activeCategory}’s *edit*` : "The *collection*"} trigger="mount" accentClassName="italic text-ember" key={activeCategory || "all"} />
             </h1>
-            <p className="pb-3 font-mono text-sm text-mute">
-              <AnimatedNumber value={sortedProducts.length} format={(n) => pad(Math.round(n), 3)} /> pieces
+            <p className="pb-3 font-mono text-sm text-mute" aria-live="polite">
+              {productsStatus === "ready" ? (
+                <>
+                  <AnimatedNumber value={sortedProducts.length} format={(n) => pad(Math.round(n), 3)} /> pieces
+                </>
+              ) : productsStatus === "loading" ? (
+                "Loading pieces…"
+              ) : (
+                "— pieces"
+              )}
             </p>
           </div>
           {/* Category-aware campaign image; wipes across when the category changes */}
@@ -150,10 +169,10 @@ const Collection = () => {
       <Searchbar />
 
       {/* ===== FILTER BAR ===== */}
-      <div className="glass sticky top-3 z-30 mx-[var(--gutter)] rounded-[22px]">
-        <div className="flex flex-wrap items-center justify-between gap-3 px-2 py-2 sm:px-3">
+      <div className="filter-bar glass sticky z-30 mx-[var(--gutter)] rounded-[22px]">
+        <div className="flex items-center justify-between gap-2 px-2 py-2 sm:gap-3 sm:px-3">
           <LayoutGroup id="cats">
-            <div className="scrollbar-hide -mx-1 flex items-center gap-1 overflow-x-auto px-1" role="tablist" aria-label="Category">
+            <div className="scrollbar-hide -mx-1 flex min-w-0 flex-1 items-center gap-1 overflow-x-auto px-1" role="tablist" aria-label="Category">
               {[{ name: null, label: "All" }, ...categories.map((c) => ({ name: c.name, label: c.name }))].map((c) => {
                 const active = activeCategory === c.name;
                 return (
@@ -163,7 +182,7 @@ const Collection = () => {
                     role="tab"
                     aria-selected={active}
                     onClick={() => setActiveCategory(c.name)}
-                    className={`relative h-10 shrink-0 px-4 label-ui transition-colors ${active ? "text-bone" : "text-ink/70 hover:text-ink"}`}
+                    className={`relative h-10 shrink-0 px-3 label-ui transition-colors sm:px-4 ${active ? "text-bone" : "text-ink/70 hover:text-ink"}`}
                   >
                     {active && <motion.span layoutId="cat-pill" className="absolute inset-0 rounded-full bg-ink" transition={{ type: "spring", stiffness: 420, damping: 34 }} />}
                     <span className="relative">{c.label}</span>
@@ -174,15 +193,17 @@ const Collection = () => {
           </LayoutGroup>
 
           {/* Sort */}
-          <div ref={sortRef} className="relative">
+          <div ref={sortRef} className="relative shrink-0">
             <button
               type="button"
               onClick={() => setSortOpen(!sortOpen)}
               aria-haspopup="listbox"
               aria-expanded={sortOpen}
+              aria-label={`Sort products, currently ${SORTS.find((s) => s.value === sortOption)?.label}`}
               className="flex h-10 items-center gap-2 px-2 label-ui"
             >
-              Sort: <span className="text-mute">{SORTS.find((s) => s.value === sortOption)?.label}</span>
+              Sort<span className="hidden sm:inline">:</span>{" "}
+              <span className="hidden text-mute sm:inline">{SORTS.find((s) => s.value === sortOption)?.label}</span>
               <motion.span animate={{ rotate: sortOpen ? 180 : 0 }} transition={{ duration: 0.3 }}>
                 <ChevronDown size={14} />
               </motion.span>
@@ -196,7 +217,7 @@ const Collection = () => {
                   animate={{ opacity: 1, y: 0, clipPath: "inset(0% 0% 0% 0%)" }}
                   exit={{ opacity: 0, y: -8, clipPath: "inset(0% 0% 100% 0%)" }}
                   transition={{ duration: 0.4, ease: ease.out }}
-                  className="glass-dark absolute right-0 top-full z-50 mt-3 w-64 rounded-2xl p-2"
+                  className="glass-dark absolute right-0 top-full z-50 mt-3 w-[min(16rem,calc(100vw-2rem))] rounded-2xl p-2"
                 >
                   {SORTS.map((opt) => (
                     <li key={opt.value}>
@@ -231,7 +252,7 @@ const Collection = () => {
               transition={{ duration: 0.45, ease: ease.out }}
               className="overflow-hidden"
             >
-              <div className="flex flex-wrap gap-2 px-3 pb-3">
+              <div className="scrollbar-hide flex gap-2 overflow-x-auto px-3 pb-3 sm:flex-wrap">
                 {[null, ...currentCat.types].map((t, i) => (
                   <motion.button
                     key={t || "all"}
@@ -242,8 +263,8 @@ const Collection = () => {
                       setActiveType(t);
                       setLimit(PAGE);
                     }}
-                    aria-pressed={activeType === t}
-                    className={`h-9 rounded-full border px-4 text-[13px] transition-colors ${activeType === t ? "border-ink bg-ink text-bone" : "border-ink/15 bg-white/40 hover:border-ink"}`}
+                    aria-pressed={typeFilter === t}
+                    className={`h-9 shrink-0 rounded-full border px-4 text-[13px] transition-colors ${typeFilter === t ? "border-ink bg-ink text-bone" : "border-ink/15 bg-white/40 hover:border-ink"}`}
                   >
                     {t ? t.replace(/Wear/, " wear") : `All ${currentCat.name.toLowerCase()}`}
                   </motion.button>
@@ -255,29 +276,52 @@ const Collection = () => {
       </div>
 
       {/* ===== RESULTS ===== */}
-      <section className="gutter pt-10" aria-live="polite">
+      <section className="gutter pt-10" aria-live="polite" aria-busy={productsStatus === "loading"}>
         {showSearch && search && (
           <p className="mb-6 text-sm text-mute">
             Showing results for “<span className="text-ink">{search}</span>”
           </p>
         )}
 
-        {products.length === 0 ? (
-          <div className="grid grid-cols-2 gap-x-4 gap-y-10 sm:grid-cols-3 lg:grid-cols-4">
+        {productsStatus === "loading" ? (
+          <div className="grid grid-cols-2 gap-x-4 gap-y-10 sm:grid-cols-3 lg:grid-cols-4" aria-hidden="true">
             {Array.from({ length: 8 }).map((_, i) => (
               <div key={i}>
-                <div className="skeleton aspect-[3/4]" />
+                <div className="skeleton aspect-[3/4] rounded-[6px]" />
                 <div className="skeleton mt-3 h-3 w-2/3" />
               </div>
             ))}
           </div>
+        ) : productsStatus === "error" ? (
+          <motion.div
+            role="alert"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mx-auto max-w-xl rounded-[24px] border border-ink/10 bg-paper px-6 py-14 text-center sm:px-10"
+          >
+            <p className="eyebrow text-ember">Collection unavailable</p>
+            <p className="display mt-4 text-4xl sm:text-5xl">We couldn’t load the collection.</p>
+            <p className="mt-4 text-[15px] leading-relaxed text-mute">{productsError}</p>
+            <button
+              type="button"
+              onClick={retryProducts}
+              className="mt-8 inline-flex h-12 items-center gap-2 rounded-full bg-ink px-7 label-ui text-bone transition-colors hover:bg-ember hover:text-ink"
+            >
+              <RefreshCw size={15} aria-hidden="true" /> Try again
+            </button>
+          </motion.div>
+        ) : products.length === 0 ? (
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="py-24 text-center">
+            <p className="display text-5xl">No products yet.</p>
+            <p className="mt-3 text-mute">The catalogue is empty right now — new pieces will appear here once they’re added.</p>
+          </motion.div>
         ) : visibleProducts.length === 0 ? (
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="py-24 text-center">
             <p className="display text-5xl">Nothing here — yet.</p>
             <p className="mt-3 text-mute">
               No products found{search && <> for “{search}”</>}. Try another filter.
             </p>
-            <button type="button" onClick={() => setActiveCategory(null)} className="mt-6 label-ui link-line">
+            <button type="button" onClick={resetFilters} className="mt-6 label-ui link-line">
               Reset filters
             </button>
           </motion.div>
@@ -300,7 +344,7 @@ const Collection = () => {
           </motion.ul>
         )}
 
-        {sortedProducts.length > limit && (
+        {productsStatus === "ready" && sortedProducts.length > limit && (
           <div className="mt-16 flex flex-col items-center gap-4">
             <p className="font-mono text-xs text-mute">
               Showing {visibleProducts.length} of {sortedProducts.length}
