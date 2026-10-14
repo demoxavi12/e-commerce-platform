@@ -1,4 +1,3 @@
-
 # 🛍️ MERN E-Commerce Platform
 
 ### A full-stack, production-deployed e-commerce application built with React, Node.js, Express, and MongoDB.
@@ -30,12 +29,12 @@
 
 ## 🌐 Live Applications
 
-| Application | Description | Link |
-|---|---|---|
+| Application                | Description                                             | Link                                                                |
+| -------------------------- | ------------------------------------------------------- | ------------------------------------------------------------------- |
 | 🛍️ **Customer Storefront** | Browse products, manage cart, checkout and place orders | **[Visit Store →](https://e-commerce-platform-six-phi.vercel.app)** |
-| 🛠️ **Admin Panel** | Manage products and view/update customer orders | **[Open Admin →](https://e-commerce-platform-b11c.vercel.app)** |
-| ⚙️ **Backend API** | Express REST API powering both applications | **[Open API →](https://e-commerce-platform-3ndl.vercel.app)** |
-| 📦 **Source Code** | Complete project repository | **[GitHub →](https://github.com/demoxavi12/e-commerce-platform)** |
+| 🛠️ **Admin Panel**         | Manage products and view/update customer orders         | **[Open Admin →](https://e-commerce-platform-b11c.vercel.app)**     |
+| ⚙️ **Backend API**         | Express REST API powering both applications             | **[Open API →](https://e-commerce-platform-3ndl.vercel.app)**       |
+| 📦 **Source Code**         | Complete project repository                             | **[GitHub →](https://github.com/demoxavi12/e-commerce-platform)**   |
 
 > **Demo note:** The deployed checkout currently uses Cash on Delivery (COD). Razorpay test-mode configuration is prepared for online-payment development.
 
@@ -123,16 +122,16 @@ Out for Delivery
 
 # 🧰 Tech Stack
 
-| Layer | Technologies |
-|---|---|
-| **Frontend** | React.js, Vite, Tailwind CSS, React Router, Axios |
-| **Backend** | Node.js, Express.js, REST APIs, JWT |
-| **Database** | MongoDB, MongoDB Atlas, Mongoose |
-| **Image Storage** | Cloudinary |
-| **Payments** | Razorpay test-mode integration prepared, Cash on Delivery |
-| **Deployment** | Vercel |
-| **Version Control** | Git, GitHub |
-| **Development** | VS Code, Postman |
+| Layer               | Technologies                                              |
+| ------------------- | --------------------------------------------------------- |
+| **Frontend**        | React.js, Vite, Tailwind CSS, React Router, Axios         |
+| **Backend**         | Node.js, Express.js, REST APIs, JWT                       |
+| **Database**        | MongoDB, MongoDB Atlas, Mongoose                          |
+| **Image Storage**   | Cloudinary                                                |
+| **Payments**        | Razorpay test-mode integration prepared, Cash on Delivery |
+| **Deployment**      | Vercel                                                    |
+| **Version Control** | Git, GitHub                                               |
+| **Development**     | VS Code, Postman                                          |
 
 ---
 
@@ -299,12 +298,12 @@ The backend exposes REST endpoints organized by resource:
 /api/order
 ```
 
-| Route | Purpose |
-|---|---|
-| `/api/user` | Authentication and user operations |
-| `/api/product` | Product operations |
-| `/api/cart` | Cart operations |
-| `/api/order` | Order operations |
+| Route          | Purpose                            |
+| -------------- | ---------------------------------- |
+| `/api/user`    | Authentication and user operations |
+| `/api/product` | Product operations                 |
+| `/api/cart`    | Cart operations                    |
+| `/api/order`   | Order operations                   |
 
 ---
 
@@ -354,13 +353,13 @@ The application is deployed as three separate Vercel projects:
 
 ### Production Services
 
-| Service | Purpose |
-|---|---|
-| **Vercel** | Frontend and backend deployment |
-| **MongoDB Atlas** | Production database |
-| **Cloudinary** | Product image storage |
-| **GitHub** | Source control |
-| **Razorpay** | Payment integration |
+| Service           | Purpose                         |
+| ----------------- | ------------------------------- |
+| **Vercel**        | Frontend and backend deployment |
+| **MongoDB Atlas** | Production database             |
+| **Cloudinary**    | Product image storage           |
+| **GitHub**        | Source control                  |
+| **Razorpay**      | Payment integration             |
 
 ---
 
@@ -604,7 +603,7 @@ NIST University
 
 # 📄 License
 
-This project was developed for **educational and portfolio purposes**.
+This project was developed for **educational,Showcase and portfolio purposes**.
 
 ---
 
